@@ -7,12 +7,13 @@
   <!-- Bootstrap 5 CSS & FontAwesome -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <!-- Chart.js, SheetJS (XLSX), JsBarcode & pdfMake -->
+  <!-- Chart.js, SheetJS (XLSX), JsBarcode, pdfMake & Html5-Qrcode Scanner -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; font-size: 0.88rem; }
     .sidebar { width: 260px; position: fixed; top: 0; bottom: 0; left: 0; background-color: #1a2c42; color: #fff; z-index: 1000; overflow-y: auto; transition: all 0.3s ease; }
@@ -30,8 +31,7 @@
     .table td { font-size: 0.82rem; vertical-align: middle; }
     .form-control-sm, .form-select-sm { font-size: 0.8rem; padding: 0.25rem 0.5rem; }
 
-    #scanner-container { width: 100%; max-width: 500px; margin: 0 auto; display: none; background: #000; }
-    #video-preview { width: 100%; height: auto; border-radius: 8px; }
+    #reader { width: 100%; border-radius: 8px; overflow: hidden; }
     
     /* Overlay Loading Anti-Double Click */
     #loading-overlay {
@@ -145,7 +145,7 @@
     </div>
 
     <!-- Scanner Barcode Modal -->
-    <div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
@@ -153,9 +153,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopCamera()"></button>
           </div>
           <div class="modal-body text-center">
-            <div id="scanner-container">
-              <video id="video-preview" autoplay playsinline></video>
-            </div>
+            <div id="reader"></div>
             <p class="text-muted mt-2 small">Arahkan kamera HP ke barcode produk</p>
           </div>
         </div>
@@ -168,10 +166,17 @@
 
   <script>
     let activeScanCallback = null;
-    let videoStream = null;
+    let html5QrCode = null;
     let loginFailAttempt = 0;
 
-    // Database state lokal untuk menyimpan saldo pos rekening secara realtime
+    // Mock database master produk untuk uji coba pencarian nama/barcode
+    let masterProdukDB = [
+      { barcode: "8991001", nama: "Aqua 600ml", hppEcer: 3000, jualEcer: 4000, maxDiskon: 500 },
+      { barcode: "8991002", nama: "Indomie Goreng", hppEcer: 2500, jualEcer: 3000, maxDiskon: 300 },
+      { barcode: "8991003", nama: "Sosro Botol", hppEcer: 4000, jualEcer: 5000, maxDiskon: 500 },
+      { barcode: "8991004", nama: "Sarung BHS Classic", hppEcer: 150000, jualEcer: 180000, maxDiskon: 10000 }
+    ];
+
     let rekeningState = {
       tunai: 0,
       bniDirect: 0,
@@ -321,7 +326,6 @@
       switch(menu) {
         case 'dashboard':
           container.innerHTML = `
-            <!-- Metrik Utama Keuangan -->
             <div class="row g-3 mb-4">
               <div class="col-md-3"><div class="card card-metric bg-success p-3"><small>Laba Bersih Bulan Ini</small><h4 class="m-0 fw-bold">Rp 0</h4><small class="text-white-50" style="font-size: 0.75rem;">(Laba Kotor - Gaji - Ops)</small></div></div>
               <div class="col-md-3"><div class="card card-metric bg-warning text-dark p-3"><small>Piutang Kopkar (Akumulasi)</small><h4 class="m-0 fw-bold">Rp 0</h4><small class="text-muted" style="font-size: 0.75rem;">Potong Gaji Belum Lunas</small></div></div>
@@ -329,194 +333,16 @@
               <div class="col-md-3"><div class="card card-metric bg-info text-dark p-3"><small>Aset Barang Konsinyasi</small><h4 class="m-0 fw-bold" id="dash-konsinyasi-val">Rp 0</h4><small class="text-muted" id="dash-konsinyasi-status" style="font-size: 0.75rem;">Belum Lunas</small></div></div>
             </div>
 
-            <!-- BAGIAN BARU: NOMINAL UANG DI TIAP-TIAP POS REKENING -->
             <div class="card p-3 mb-4 bg-white shadow-sm border-0 border-start border-success border-4">
               <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;"><i class="fas fa-wallet me-2 text-success"></i>Posisi Saldo & Nominal Uang di Tiap-Tiap Rekening (Realtime)</h6>
               <div class="row g-3">
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-money-bill-wave text-success me-1"></i> Tunai (Kas Laci)</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-tunai">Rp ${rekeningState.tunai.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-university text-primary me-1"></i> BNI Direct</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-bni-direct">Rp ${rekeningState.bniDirect.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-qrcode text-danger me-1"></i> QRIS BNI</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-qris">Rp ${rekeningState.qris.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-mobile-alt text-warning me-1"></i> wondr by BNI</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-wondr">Rp ${rekeningState.wondr.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-credit-card text-info me-1"></i> myBCA</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-mybca">Rp ${rekeningState.mybca.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-wallet text-secondary me-1"></i> Livin' by Mandiri</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-livin">Rp ${rekeningState.livin.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-exchange-alt text-primary me-1"></i> Flip</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-flip">Rp ${rekeningState.flip.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-building text-dark me-1"></i> Kas Kopkar</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-kopkar">Rp ${rekeningState.kopkar.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Panel Akumulasi Realtime Penjualan Tempo & Entertaint -->
-            <div class="row g-3 mb-4">
-              <div class="col-md-6">
-                <div class="card p-3 border-0 shadow-sm bg-white border-start border-primary border-4">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                      <small class="text-muted fw-bold" style="font-size: 0.75rem;">TOTAL PIUTANG PENJUALAN TEMPO (REALTIME)</small>
-                      <h5 class="text-primary fw-bold m-0" id="dash-tempo-total">Rp 0</h5>
-                    </div>
-                    <span class="badge bg-secondary" style="font-size: 0.75rem;">Kosong</span>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="card p-3 border-0 shadow-sm bg-white border-start border-warning border-4">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                      <small class="text-muted fw-bold" style="font-size: 0.75rem;">BIAYA ENTERTAINT (MASUK OPERASIONAL)</small>
-                      <h5 class="text-warning text-dark fw-bold m-0" id="dash-entertaint-total">Rp 0</h5>
-                    </div>
-                    <span class="badge bg-success" style="font-size: 0.75rem;">Tercatat di Ops</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Panel Control Filter Utama Dashboard -->
-            <div class="card p-3 mb-4 bg-white shadow-sm border-0">
-              <h6 class="fw-bold text-dark mb-3" style="font-size: 0.85rem;"><i class="fas fa-sliders-h me-2 text-primary"></i>Pengaturan Rentang Waktu & Pengelompokan Trend Sumbu-X</h6>
-              
-              <div class="row g-2 align-items-center">
-                <div class="col-md-3">
-                  <label class="form-label fw-bold small m-0">Tipe Kategori Waktu:</label>
-                  <select class="form-select form-select-sm" id="filter-mode-rentang" onchange="handleModeRentangChange()">
-                    <option value="harian">Harian (Rentang Tanggal Custom)</option>
-                    <option value="mingguan">Mingguan (Rentang Tanggal Custom)</option>
-                    <option value="bulanan" selected>Bulanan (Bulan Awal - Akhir)</option>
-                    <option value="tahunan">Tahunan (Tahun Awal - Akhir)</option>
-                  </select>
-                </div>
-
-                <div class="col-md-6" id="wrapper-input-tahunan" style="display:none;">
-                  <div class="row g-2">
-                    <div class="col-6">
-                      <label class="form-label fw-bold small m-0">Tahun Awal:</label>
-                      <select class="form-select form-select-sm" id="tahun-awal" onchange="updateDashboardCharts()">
-                        <option value="2025">2025</option><option value="2026" selected>2026</option>
-                      </select>
-                    </div>
-                    <div class="col-6">
-                      <label class="form-label fw-bold small m-0">Tahun Akhir:</label>
-                      <select class="form-select form-select-sm" id="tahun-akhir" onchange="updateDashboardCharts()">
-                        <option value="2026" selected>2026</option><option value="2027">2027</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="col-md-6" id="wrapper-input-bulanan">
-                  <div class="row g-2">
-                    <div class="col-6">
-                      <label class="form-label fw-bold small m-0">Dari Bulan - Tahun:</label>
-                      <input type="month" class="form-control form-control-sm" id="bulan-awal" value="2026-01" onchange="updateDashboardCharts()">
-                    </div>
-                    <div class="col-6">
-                      <label class="form-label fw-bold small m-0">Sampai Bulan - Tahun:</label>
-                      <input type="month" class="form-control form-control-sm" id="bulan-akhir" value="2026-10" onchange="updateDashboardCharts()">
-                    </div>
-                  </div>
-                </div>
-
-                <div class="col-md-6" id="wrapper-input-harian" style="display:none;">
-                  <div class="row g-2">
-                    <div class="col-6">
-                      <label class="form-label fw-bold small m-0">Dari Tanggal:</label>
-                      <input type="date" class="form-control form-control-sm" id="tgl-awal" value="2026-10-01" onchange="updateDashboardCharts()">
-                    </div>
-                    <div class="col-6">
-                      <label class="form-label fw-bold small m-0">Sampai Tanggal:</label>
-                      <input type="date" class="form-control form-control-sm" id="tgl-akhir" value="2026-10-17" onchange="updateDashboardCharts()">
-                    </div>
-                  </div>
-                </div>
-
-                <div class="col-md-3">
-                  <div class="p-2 bg-light border rounded text-center">
-                    <small class="text-muted d-block" style="font-size: 0.7rem;">Status Sumbu-X:</small>
-                    <span class="badge bg-primary" id="badge-status-sumbu" style="font-size: 0.75rem;">Mengikuti Kategori Waktu</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Chart Penjualan dan Laba -->
-            <div class="row g-3">
-              <div class="col-md-6">
-                <div class="card p-3 mb-4 shadow-sm border-0">
-                  <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                    <h6 class="m-0 fw-bold text-primary"><i class="fas fa-chart-bar me-2"></i>Trend Penjualan</h6>
-                    <div style="width: 160px;">
-                      <select class="form-select form-select-sm border-primary" id="filter-kat-penjualan" onchange="updateDashboardCharts()">
-                        <option value="semua">Semua Kategori</option>
-                        <option value="minuman">Minuman & Snack</option>
-                        <option value="obat">Obat / Kesehatan</option>
-                        <option value="atk">ATK & Kantor</option>
-                        <option value="sarung">Sarung & Bamus</option>
-                      </select>
-                    </div>
-                  </div>
-                  <canvas id="salesCategoryChart" style="max-height: 260px;"></canvas>
-                </div>
-              </div>
-
-              <div class="col-md-6">
-                <div class="card p-3 mb-4 shadow-sm border-0">
-                  <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                    <h6 class="m-0 fw-bold text-success"><i class="fas fa-chart-line me-2"></i>Trend Laba</h6>
-                    <div style="width: 160px;">
-                      <select class="form-select form-select-sm border-success" id="filter-kat-laba" onchange="updateDashboardCharts()">
-                        <option value="semua">Semua Kategori</option>
-                        <option value="minuman">Minuman & Snack</option>
-                        <option value="obat">Obat / Kesehatan</option>
-                        <option value="atk">ATK & Kantor</option>
-                        <option value="sarung">Sarung & Bamus</option>
-                      </select>
-                    </div>
-                  </div>
-                  <canvas id="profitCategoryChart" style="max-height: 260px;"></canvas>
-                </div>
+                <div class="col-md-3 col-sm-6"><div class="p-3 bg-light rounded border"><small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-money-bill-wave text-success me-1"></i> Tunai (Kas Laci)</small><h5 class="fw-bold text-dark m-0 mt-1" id="saldo-tunai">Rp ${rekeningState.tunai.toLocaleString('id-ID')}</h5></div></div>
+                <div class="col-md-3 col-sm-6"><div class="p-3 bg-light rounded border"><small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-university text-primary me-1"></i> BNI Direct</small><h5 class="fw-bold text-dark m-0 mt-1" id="saldo-bni-direct">Rp ${rekeningState.bniDirect.toLocaleString('id-ID')}</h5></div></div>
+                <div class="col-md-3 col-sm-6"><div class="p-3 bg-light rounded border"><small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-qrcode text-danger me-1"></i> QRIS BNI</small><h5 class="fw-bold text-dark m-0 mt-1" id="saldo-qris">Rp ${rekeningState.qris.toLocaleString('id-ID')}</h5></div></div>
+                <div class="col-md-3 col-sm-6"><div class="p-3 bg-light rounded border"><small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-mobile-alt text-warning me-1"></i> wondr by BNI</small><h5 class="fw-bold text-dark m-0 mt-1" id="saldo-wondr">Rp ${rekeningState.wondr.toLocaleString('id-ID')}</h5></div></div>
               </div>
             </div>
           `;
-          initDashboardCharts();
           break;
 
         case 'kasir':
@@ -541,9 +367,6 @@
                     <option value="qris-bni">QRIS BNI</option>
                     <option value="bni-direct">BNI Direct / Transfer BNI</option>
                     <option value="wondr-bni">wondr by BNI</option>
-                    <option value="mybca">myBCA</option>
-                    <option value="livin-mandiri">Livin' by Mandiri</option>
-                    <option value="flip">Flip</option>
                     <option value="entertaint" class="text-warning fw-bold">✨ Entertaint (Pembelian Gratis - Masuk Ops)</option>
                     <option value="potong-gaji">Potong Gaji Bulanan (Cut-Off 16-15)</option>
                     <option value="tempo">Penjualan Tempo (Bebas Waktu)</option>
@@ -551,50 +374,18 @@
                 </div>
               </div>
 
-              <!-- INPUT TAMBAHAN KHUSUS ENTERTAINT -->
-              <div class="row g-2 mb-3 bg-light p-3 rounded border" id="wrapper-entertaint" style="display:none;">
-                <div class="col-md-12">
-                  <label class="form-label fw-bold text-warning small"><i class="fas fa-gift me-1"></i> Keterangan / Keperluan Entertaint:</label>
-                  <input type="text" class="form-control form-control-sm" id="ket-entertaint" placeholder="Contoh: Jamuan Tamu Toko / Relasi Bisnis">
-                  <small class="text-muted" style="font-size: 0.75rem;">Nominal belanja otomatis diset <strong>Rp 0</strong> dan tercatat otomatis sebagai beban Biaya Operasional.</small>
-                </div>
-              </div>
-
-              <!-- INPUT TAMBAHAN KHUSUS POTONG GAJI -->
-              <div class="row g-2 mb-3 bg-light p-3 rounded border" id="wrapper-potong-gaji" style="display:none;">
-                <div class="col-md-6">
-                  <label class="form-label fw-bold text-danger small"><i class="fas fa-id-badge me-1"></i> No. Registrasi Pegawai:</label>
-                  <input type="text" class="form-control form-control-sm" id="reg-pegawai" placeholder="Contoh: REG-001">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-bold text-danger small"><i class="fas fa-user me-1"></i> Nama Karyawan:</label>
-                  <input type="text" class="form-control form-control-sm" id="nama-pegawai" placeholder="Nama Karyawan Pemotong Gaji">
-                </div>
-                <div class="col-12"><small class="text-muted" style="font-size: 0.75rem;">Otomatis terecord ke menu <strong>Tagihan Potong Gaji (HRD)</strong>.</small></div>
-              </div>
-
-              <!-- INPUT TAMBAHAN KHUSUS TEMPO -->
-              <div class="row g-2 mb-3 bg-light p-3 rounded border" id="wrapper-tempo" style="display:none;">
-                <div class="col-md-12">
-                  <label class="form-label fw-bold text-primary small"><i class="fas fa-file-invoice me-1"></i> Keterangan Instansi / Orang (Tempo):</label>
-                  <input type="text" class="form-control form-control-sm" id="ket-tempo" placeholder="Contoh: Toko Berkah / Bpk. Rudi (Tempo)">
-                  <small class="text-muted" style="font-size: 0.75rem;">Terakumulasi real-time di <strong>Dashboard</strong>. Status otomatis <strong>Lunas</strong> setelah dilunasi.</small>
-                </div>
-              </div>
-
+              <!-- INPUT PENCARIAN BARCODE / KETIK NAMA BARANG DENGAN FITUR AUTO-SEARCH & KAMERA -->
               <div class="row g-2 mb-3">
-                <div class="col-md-6">
-                  <label class="form-label fw-bold small">Scan Barcode / Kode Produk:</label>
+                <div class="col-md-12 position-relative">
+                  <label class="form-label fw-bold small"><i class="fas fa-barcode me-1 text-primary"></i> Scan Barcode atau Ketik Nama Barang:</label>
                   <div class="input-group input-group-sm">
-                    <input type="text" id="barcode-input" class="form-control" placeholder="Scan Barcode...">
-                    <button class="btn btn-primary" onclick="startCamera(val => setBarcode(val))"><i class="fas fa-camera"></i> Scan</button>
+                    <input type="text" id="barcode-input" class="form-control" placeholder="Ketik nama produk atau scan barcode..." oninput="handlePencarianBarang(this.value)" autocomplete="off">
+                    <button class="btn btn-primary" onclick="startCamera(val => { document.getElementById('barcode-input').value = val; handlePencarianBarang(val); })">
+                      <i class="fas fa-camera"></i> Scan Kamera
+                    </button>
                   </div>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-bold small">Pilih Nama Produk dari Master:</label>
-                  <select class="form-select form-select-sm border-success" id="pilih-nama-produk" onchange="tambahProdukDariDropdown(this.value)">
-                    <option value="">-- Pilih Produk --</option>
-                  </select>
+                  <!-- Dropdown Hasil Pencarian Pintar (Live Suggestions) -->
+                  <div id="pencarian-suggestions" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1050; display: none; max-height: 200px; overflow-y: auto;"></div>
                 </div>
               </div>
 
@@ -611,7 +402,7 @@
                     </tr>
                   </thead>
                   <tbody id="cart-tbody">
-                    <!-- Baris keranjang bersih dari dummy -->
+                    <!-- Item keranjang belanja muncul di sini -->
                   </tbody>
                 </table>
               </div>
@@ -630,42 +421,6 @@
             </div>`;
           break;
 
-        case 'riwayat':
-          container.innerHTML = `
-            <div class="card p-3">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="m-0 fw-bold"><i class="fas fa-receipt me-2"></i>Riwayat Nota Transaksi & Penjualan</h6>
-                <button class="btn btn-outline-success btn-sm" onclick="exportToExcel('table-riwayat', 'Riwayat_Nota.xlsx')"><i class="fas fa-file-excel me-1"></i> Export Excel</button>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-hover align-middle" id="table-riwayat">
-                  <thead class="table-dark"><tr><th>No. Nota</th><th>Tanggal</th><th>Tipe Pembeli</th><th>Total</th><th>Status</th></tr></thead>
-                  <tbody>
-                    <tr><td colspan="5" class="text-center text-muted py-3">Belum ada riwayat transaksi tercatat.</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>`;
-          break;
-
-        case 'stok':
-          container.innerHTML = `
-            <div class="card p-3">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="m-0 fw-bold"><i class="fas fa-clipboard-check me-2"></i>Stok Opname & Perbandingan Deviasi Bulanan</h6>
-                <button class="btn btn-primary btn-sm" onclick="alert('Mulai Sesi Stok Opname Baru')">Mulai Opname Baru</button>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-bordered align-middle">
-                  <thead class="table-secondary"><tr><th>Barcode</th><th>Nama Barang</th><th>Stok Sistem</th><th>Hitung Manual</th><th>Deviasi (Selisih)</th></tr></thead>
-                  <tbody>
-                    <tr><td colspan="5" class="text-center text-muted py-3">Belum ada data stok barang. Silakan input dari menu Barang Masuk / Master Barang.</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>`;
-          break;
-
         case 'barang-masuk':
           container.innerHTML = `
             <div class="card p-3">
@@ -676,10 +431,10 @@
                   <input type="date" class="form-control form-control-sm" id="tgl-barang-masuk" value="${getTodayDate()}">
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label fw-bold small">Barcode / Kode Produk:</label>
+                  <label class="form-label fw-bold small">Barcode / Nama Produk (Pencarian & Scan):</label>
                   <div class="input-group input-group-sm">
-                    <input type="text" id="masuk-barcode" class="form-control" placeholder="Scan Barcode / Ketik Kode Produk">
-                    <button class="btn btn-primary" onclick="startCamera(val => document.getElementById('masuk-barcode').value = val)"><i class="fas fa-camera"></i> Scan</button>
+                    <input type="text" id="masuk-barcode" class="form-control" placeholder="Scan barcode atau ketik nama produk...">
+                    <button class="btn btn-primary" onclick="startCamera(val => document.getElementById('masuk-barcode').value = val)"><i class="fas fa-camera"></i> Scan Kamera</button>
                   </div>
                 </div>
                 <div class="col-md-6">
@@ -693,38 +448,8 @@
                     <option value="beli-langsung">Beli Langsung (Bayar via Rekening)</option>
                   </select>
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Satuan Terima:</label>
-                  <select class="form-select form-select-sm" id="satuan-terima" onchange="togglePcsPerKemasan(this.value)">
-                    <option value="eceran">Eceran / Pcs</option>
-                    <option value="dus">Dus / Karton</option>
-                    <option value="kodi">Kodi</option>
-                  </select>
-                </div>
-                <div class="col-md-4" id="pcs-wrapper" style="display:none;">
-                  <label class="form-label fw-bold small text-primary">Jumlah Pcs per Kemasan (Dus/Kodi):</label>
-                  <input type="number" id="qty-per-kemasan" class="form-control form-control-sm" placeholder="Contoh: 24 Pcs" oninput="hitungHppOtomatis()">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Qty Masuk (Sesuai Satuan Terima):</label>
-                  <input type="number" id="qty-masuk" class="form-control form-control-sm" placeholder="0" oninput="hitungHppOtomatis()">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Total Nominal Kulakan (Rp):</label>
-                  <input type="number" id="total-nominal-kulakan" class="form-control form-control-sm" placeholder="0" oninput="hitungHppOtomatis()">
-                </div>
-                <div class="col-md-4 bg-light p-2 rounded border">
-                  <label class="form-label fw-bold small text-success m-0">HPP Otomatis Konversi:</label>
-                  <div class="text-success fw-bold small" id="hpp-konversi-text">Ecer: Rp 0 | Dus: Rp 0 | Kodi: Rp 0</div>
-                </div>
-                <div class="col-md-12" id="rekening-bayar-wrapper" style="display:none;">
-                  <label class="form-label fw-bold small text-success">Pilih Pos Rekening Pembayaran Kulakan:</label>
-                  <select class="form-select form-select-sm border-success">
-                    <option value="tunai">Tunai (Kas Laci)</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option>
-                  </select>
-                </div>
               </div>
-              <button class="btn btn-success mt-3 w-100 py-2" onclick="executeWithProtection('Barang Masuk', () => alert('Barang Masuk Berhasil! Rincian HPP Multi-Satuan Tercatat di Master Barang.'))"><i class="fas fa-save me-1"></i> Simpan Barang Masuk & Update HPP Master</button>
+              <button class="btn btn-success mt-3 w-100 py-2" onclick="executeWithProtection('Barang Masuk', () => alert('Barang Masuk Berhasil!'))"><i class="fas fa-save me-1"></i> Simpan Barang Masuk & Update HPP Master</button>
             </div>`;
           break;
 
@@ -733,442 +458,28 @@
             <div class="card p-3">
               <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <div>
-                  <h6 class="m-0 fw-bold"><i class="fas fa-tags me-2"></i>Master Barang & Penentuan Batas Maksimal Potongan (Eceran, Dus, Kodi)</h6>
-                  <small class="text-muted" style="font-size: 0.75rem;">Masukkan nominal potongan pada baris input. Sisa laba otomatis terhitung dan menjadi panduan kasir.</small>
+                  <h6 class="m-0 fw-bold"><i class="fas fa-tags me-2"></i>Master Barang & Penentuan Batas Maksimal Potongan</h6>
+                  <small class="text-muted" style="font-size: 0.75rem;">Gunakan pencarian atau scan untuk mengelola data produk.</small>
                 </div>
-                <button class="btn btn-primary btn-sm" onclick="alert('Form Tambah Produk Baru')"><i class="fas fa-plus me-1"></i> Tambah Produk</button>
+                <div class="input-group input-group-sm w-auto">
+                  <input type="text" class="form-control" placeholder="Cari nama / barcode..." id="master-search">
+                  <button class="btn btn-outline-primary" onclick="startCamera(val => document.getElementById('master-search').value = val)"><i class="fas fa-camera"></i></button>
+                </div>
               </div>
               <div class="table-responsive">
                 <table class="table table-bordered align-middle">
                   <thead class="table-secondary">
                     <tr>
-                      <th style="width: 15%;">Barcode & Nama Produk</th>
-                      <th style="width: 13%;">Rincian HPP (Ecer / Dus / Kodi)</th>
-                      <th style="width: 15%;">Harga Jual (Ecer / Dus / Kodi)</th>
-                      <th style="width: 14%;" class="text-success">Nominal Laba Asli</th>
-                      <th style="width: 18%;" class="bg-light text-primary">Batas Potongan Diskon</th>
-                      <th style="width: 14%;" class="text-danger">Sisa Laba Setelah Diskon</th>
-                      <th style="width: 11%;" class="text-center">Aksi (Simpan/Edit/Hapus)</th>
+                      <th>Barcode & Nama Produk</th>
+                      <th>Rincian HPP</th>
+                      <th>Harga Jual</th>
+                      <th class="text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr><td colspan="7" class="text-center text-muted py-3">Belum ada data produk di master.</td></tr>
+                    <tr><td colspan="4" class="text-center text-muted py-3">Belum ada data produk di master.</td></tr>
                   </tbody>
                 </table>
-              </div>
-            </div>`;
-          break;
-
-        case 'konsinyasi':
-          container.innerHTML = `
-            <div class="card p-3">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  <h6 class="m-0 fw-bold"><i class="fas fa-handshake me-2"></i>Laporan Rekap HPP Barang Konsinyasi</h6>
-                  <small class="text-muted" style="font-size: 0.75rem;">Total Nilai Aset Konsinyasi Ter-update: <strong>Rp 0</strong></small>
-                </div>
-                <button class="btn btn-success btn-sm" onclick="exportToExcel('table-konsinyasi', 'Rekap_HPP_Konsinyasi_Supplier.xlsx')"><i class="fas fa-file-excel me-1"></i> Export .XLSX</button>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-striped align-middle" id="table-konsinyasi">
-                  <thead><tr><th>Nama Supplier</th><th>Nama Barang</th><th>Qty Terjual</th><th>HPP per Unit</th><th>Total Wajib Bayar Supplier</th></tr></thead>
-                  <tbody><tr><td colspan="5" class="text-center text-muted py-3">Tidak ada data konsinyasi.</td></tr></tbody>
-                </table>
-              </div>
-            </div>`;
-          break;
-
-        case 'bayar-konsinyasi':
-          container.innerHTML = `
-            <div class="card p-3">
-              <h6 class="fw-bold"><i class="fas fa-file-invoice-dollar me-2"></i>Pembayaran Tagihan Barang Konsinyasi ke Supplier</h6>
-              
-              <div class="row g-2 mt-1">
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Tanggal Pembayaran:</label>
-                  <input type="date" class="form-control form-control-sm" id="tgl-bayar-konsinyasi" value="${getTodayDate()}">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Pilih Supplier Konsinyasi:</label>
-                  <select class="form-select form-select-sm border-primary" id="pilih-supplier-konsinyasi" onchange="filterTagihanSupplier(this.value)">
-                    <option value="">-- Pilih Supplier --</option>
-                  </select>
-                </div>
-
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Pilih Pos Rekening Pembayaran:</label>
-                  <select class="form-select form-select-sm border-success">
-                    <option value="tunai">Tunai (Kas Laci)</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option>
-                  </select>
-                </div>
-
-                <div class="col-md-12 mt-2">
-                  <label class="form-label fw-bold small text-dark"><i class="fas fa-calendar-alt me-1 text-primary"></i> Daftar Periode Tagihan Bulanan Belum Dibayar:</label>
-                  <div class="table-responsive border rounded bg-white">
-                    <table class="table table-hover align-middle m-0">
-                      <thead class="table-light">
-                        <tr>
-                          <th style="width: 50px;" class="text-center">Bayar</th>
-                          <th>Periode Bulan Tagihan</th>
-                          <th>Keterangan / Rincian Terjual</th>
-                          <th>Nominal Tagihan HPP</th>
-                          <th>Status Periode</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr><td colspan="5" class="text-center text-muted py-3">Tidak ada tagihan aktif.</td></tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div class="col-md-12 mt-2">
-                  <div class="p-3 bg-light border rounded d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div>
-                      <span class="fw-bold text-success">Total Nominal Tagihan yang Dibayar (Otomatis):</span>
-                      <br><small class="text-muted" style="font-size: 0.75rem;">Terhitung otomatis sesuai centang periode tagihan.</small>
-                    </div>
-                    <h4 class="text-success fw-bold m-0" id="total-bayar-konsinyasi">Rp 0</h4>
-                  </div>
-                </div>
-              </div>
-
-              <button class="btn btn-success mt-3 w-100 py-2" onclick="executeWithProtection('Pembayaran Tagihan Konsinyasi', () => alert('Pembayaran Tagihan Konsinyasi Berhasil Diproses!'))">
-                <i class="fas fa-check-circle me-1"></i> Proses Pelunasan Tagihan Konsinyasi Selected
-              </button>
-            </div>`;
-          break;
-
-        case 'pemasukan':
-          container.innerHTML = `
-            <div class="card p-3">
-              <h6 class="fw-bold"><i class="fas fa-funnel-dollar me-2"></i>Pemasukan Luar / Dana Masuk Non-Penjualan Retail</h6>
-              <div class="row g-2 mt-1">
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Tanggal Transaksi:</label>
-                  <input type="date" class="form-control form-control-sm" id="tgl-pemasukan" value="${getTodayDate()}">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Keterangan Pemasukan:</label>
-                  <select class="form-select form-select-sm border-primary" id="pilihan-keterangan-pemasukan" onchange="checkKeteranganPemasukan(this.value)">
-                    <option value="piutang-kopkar">Pembayaran Piutang Kopkar</option>
-                    <option value="hutang-kopkar">Penambahan Hutang Kopkar</option>
-                    <option value="penjualan-tempo">Pembayaran Penjualan Tempo</option>
-                    <option value="fee-payroll">Fee Payroll</option>
-                    <option value="tarik-tunai">Tarik Tunai (Jasa Gesek / Cashout)</option>
-                    <option value="lainnya">Lainnya (Input Manual)</option>
-                  </select>
-                </div>
-
-                <div class="col-md-4" id="wrapper-ket-manual" style="display:none;">
-                  <label class="form-label fw-bold small">Keterangan Manual:</label>
-                  <input type="text" class="form-control form-control-sm" id="ket-manual-input" placeholder="Ketik keterangan...">
-                </div>
-
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Rekening Tujuan Masuk Saldo:</label>
-                  <select class="form-select form-select-sm border-success">
-                    <option value="tunai">Tunai (Kas Laci)</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option><option value="kas-kopkar">Kas Kopkar</option>
-                  </select>
-                </div>
-
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Nominal Utama (Rp):</label>
-                  <input type="number" class="form-control form-control-sm" placeholder="0" id="nominal-pemasukan">
-                </div>
-
-                <div class="col-md-4" id="wrapper-biaya-admin" style="display:none;">
-                  <label class="form-label fw-bold small text-success"><i class="fas fa-coins me-1"></i> Biaya Admin (Masuk Laba Langsung) (Rp):</label>
-                  <input type="number" class="form-control form-control-sm border-success" placeholder="0" id="biaya-admin-input">
-                  <small class="text-success" style="font-size: 0.75rem;">Masuk sebagai keuntungan/laba toko.</small>
-                </div>
-
-                <div class="col-md-12 mt-3">
-                  <button class="btn btn-success w-100 py-2" onclick="executeWithProtection('Pemasukan Luar', () => alert('Pemasukan Berhasil Dicatat & Saldo Terupdate!'))">
-                    <i class="fas fa-save me-1"></i> Simpan Pemasukan Luar
-                  </button>
-                </div>
-              </div>
-            </div>`;
-          break;
-
-        case 'operasional':
-          container.innerHTML = `
-            <div class="card p-3">
-              <h6 class="fw-bold"><i class="fas fa-lightbulb me-2"></i>Biaya Operasional Toko (Multi-Item Belanja, Admin Bank, Gaji & Trend Bulanan)</h6>
-              
-              <div class="row g-2 mt-2">
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Pilih Kategori Biaya Operasional:</label>
-                  <select class="form-select form-select-sm border-primary" id="kategori-ops" onchange="toggleFormOps(this.value)">
-                    <option value="belanja-barang">1. Pembelian Barang Operasional Toko</option>
-                    <option value="admin-bank">2. Biaya Administrasi Bank</option>
-                    <option value="gaji-karyawan">3. Biaya Gaji Karyawan Toko</option>
-                    <option value="umum">4. Biaya Umum Lainnya (PLN, PDAM, dll)</option>
-                  </select>
-                </div>
-
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Tanggal Transaksi:</label>
-                  <input type="date" class="form-control form-control-sm" id="tgl-ops" value="${getTodayDate()}">
-                </div>
-
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Sumber Rekening Pembayaran:</label>
-                  <select class="form-select form-select-sm border-success">
-                    <option value="tunai">Tunai (Kas Laci)</option><option value="bni-direct">BNI Direct</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- FORM 1: PEMBELIAN BARANG OPERASIONAL TOKO -->
-              <div id="form-belanja-barang" class="mt-3 border p-3 rounded bg-light">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <h6 class="fw-bold text-primary m-0" style="font-size:0.85rem;"><i class="fas fa-shopping-basket me-1"></i> Daftar Barang Operasional yang Dibeli</h6>
-                  <button class="btn btn-outline-primary btn-sm" onclick="tambahBarisBelanjaOps()"><i class="fas fa-plus me-1"></i> Tambah Item</button>
-                </div>
-                <div class="table-responsive">
-                  <table class="table table-bordered bg-white align-middle m-0">
-                    <thead class="table-secondary">
-                      <tr><th>Nama Barang Operasional</th><th style="width: 200px;">Nominal (Rp)</th><th style="width: 70px;" class="text-center">Aksi</th></tr>
-                    </thead>
-                    <tbody id="tbody-belanja-ops">
-                      <tr>
-                        <td><input type="text" class="form-control form-control-sm" placeholder="Contoh: Lampu LED / Plastik"></td>
-                        <td><input type="number" class="form-control form-control-sm" placeholder="0" oninput="hitungTotalOps()"></td>
-                        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisOps(this)"><i class="fas fa-trash"></i></button></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <!-- FORM 2: BIAYA ADMINISTRASI BANK -->
-              <div id="form-admin-bank" class="mt-3 border p-3 rounded bg-light" style="display:none;">
-                <h6 class="fw-bold text-danger mb-2" style="font-size:0.85rem;"><i class="fas fa-university me-1"></i> Biaya Administrasi Transfer / Bank</h6>
-                <div class="row g-2">
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold small">Keterangan Bank / Transaksi:</label>
-                    <input type="text" class="form-control form-control-sm" placeholder="Contoh: Biaya Admin Transfer Antar Bank">
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold small">Nominal Biaya Admin (Rp):</label>
-                    <input type="number" class="form-control form-control-sm" placeholder="0" id="nominal-admin-bank" oninput="hitungTotalOps()">
-                  </div>
-                </div>
-              </div>
-
-              <!-- FORM 3: BIAYA GAJI KARYAWAN -->
-              <div id="form-gaji-karyawan" class="mt-3 border p-3 rounded bg-light" style="display:none;">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <h6 class="fw-bold text-success m-0" style="font-size:0.85rem;"><i class="fas fa-users me-1"></i> Daftar Gaji Karyawan Toko</h6>
-                  <button class="btn btn-outline-success btn-sm" onclick="tambahBarisGajiOps()"><i class="fas fa-plus me-1"></i> Tambah Karyawan</button>
-                </div>
-                <div class="table-responsive">
-                  <table class="table table-bordered bg-white align-middle m-0">
-                    <thead class="table-secondary">
-                      <tr><th>Nama Karyawan</th><th style="width: 200px;">Nominal Gaji (Rp)</th><th style="width: 70px;" class="text-center">Aksi</th></tr>
-                    </thead>
-                    <tbody id="tbody-gaji-ops">
-                      <tr>
-                        <td><input type="text" class="form-control form-control-sm" placeholder="Nama Karyawan"></td>
-                        <td><input type="number" class="form-control form-control-sm" placeholder="0" oninput="hitungTotalOps()"></td>
-                        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisOps(this)"><i class="fas fa-trash"></i></button></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <!-- FORM 4: BIAYA UMUM LAINNYA -->
-              <div id="form-umum" class="mt-3 border p-3 rounded bg-light" style="display:none;">
-                <h6 class="fw-bold text-dark mb-2" style="font-size:0.85rem;"><i class="fas fa-receipt me-1"></i> Biaya Utilitas / Lainnya</h6>
-                <div class="row g-2">
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold small">Keterangan Biaya:</label>
-                    <input type="text" class="form-control form-control-sm" placeholder="Contoh: Tagihan PLN / PDAM / Wifi">
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold small">Nominal (Rp):</label>
-                    <input type="number" class="form-control form-control-sm" placeholder="0" id="nominal-umum" oninput="hitungTotalOps()">
-                  </div>
-                </div>
-              </div>
-
-              <div class="mt-3 p-3 bg-white border rounded d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="m-0 fw-bold">Total Pengeluaran: <span class="text-danger" id="total-ops-text">Rp 0</span></h5>
-                <button class="btn btn-success px-4" onclick="executeWithProtection('Biaya Operasional', () => alert('Biaya Operasional Berhasil Disimpan!'))"><i class="fas fa-save me-1"></i> Simpan Biaya Operasional</button>
-              </div>
-
-              <!-- Trend Biaya per Kategori Bulanan -->
-              <div class="mt-4 card p-3 shadow-sm">
-                <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-chart-bar me-2"></i>Trend Biaya Operasional per Kategori (Periode Bulanan)</h6>
-                <canvas id="opsTrendChart" style="max-height: 250px;"></canvas>
-              </div>
-            </div>`;
-          initOpsTrendChart();
-          break;
-
-        case 'gaji':
-          container.innerHTML = `
-            <div class="card p-3">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  <h6 class="m-0 fw-bold"><i class="fas fa-users-cog me-2"></i>Tagihan Potong Gaji (HRD) & Gaji Pegawai</h6>
-                  <small class="text-muted" style="font-size: 0.75rem;">Periode Cut-Off: 16 Des s/d 15 Jan (Jatuh Tempo: 1 Feb)</small>
-                </div>
-                <button class="btn btn-success btn-sm" onclick="exportToExcel('table-hrd', 'Tagihan_HRD.xlsx')"><i class="fas fa-file-excel me-1"></i> Export .XLSX</button>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-bordered align-middle" id="table-hrd">
-                  <thead class="table-dark"><tr><th>No Reg</th><th>Nama</th><th>Akumulasi Tagihan</th><th>Status</th></tr></thead>
-                  <tbody><tr><td colspan="4" class="text-center text-muted py-3">Tidak ada data tagihan potong gaji.</td></tr></tbody>
-                </table>
-              </div>
-            </div>`;
-          break;
-
-        case 'mutasi':
-          container.innerHTML = `
-            <div class="card p-3">
-              <h6 class="fw-bold"><i class="fas fa-university me-2"></i>Mutasi Rekening (Transfer Antar Pos)</h6>
-              <div class="row g-2 mt-1">
-                <div class="col-md-3">
-                  <label class="form-label fw-bold small">Tanggal Transaksi:</label>
-                  <input type="date" class="form-control form-control-sm" id="tgl-mutasi" value="${getTodayDate()}">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label fw-bold small">Dari Rekening Asal:</label>
-                  <select class="form-select form-select-sm"><option value="bni-direct">BNI Direct</option><option value="tunai">Tunai</option><option value="qris-bni">QRIS</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option></select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label fw-bold small">Ke Rekening Tujuan:</label>
-                  <select class="form-select form-select-sm"><option value="tunai">Tunai</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option></select>
-                </div>
-                <div class="col-md-3"><label class="form-label fw-bold small">Nominal (Rp):</label><input type="number" class="form-control form-control-sm" placeholder="0"></div>
-              </div>
-              <button class="btn btn-primary mt-3 w-100 py-2" onclick="executeWithProtection('Mutasi', () => alert('Mutasi Berhasil!'))"><i class="fas fa-exchange-alt me-1"></i> Proses Mutasi</button>
-            </div>`;
-          break;
-
-        case 'saldo-awal':
-          container.innerHTML = `
-            <div class="card p-3">
-              <h6 class="fw-bold"><i class="fas fa-wallet me-2"></i>Saldo Awal Akuntansi Terperinci</h6>
-              <div class="row g-2 mt-2">
-                <div class="col-md-4"><label class="form-label fw-bold small">Tunai (Kas Laci):</label><input type="number" class="form-control form-control-sm" id="input-saldo-tunai" value="${rekeningState.tunai}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">BNI Direct:</label><input type="number" class="form-control form-control-sm" id="input-saldo-bni" value="${rekeningState.bniDirect}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">QRIS BNI:</label><input type="number" class="form-control form-control-sm" id="input-saldo-qris" value="${rekeningState.qris}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">wondr by BNI:</label><input type="number" class="form-control form-control-sm" id="input-saldo-wondr" value="${rekeningState.wondr}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">myBCA:</label><input type="number" class="form-control form-control-sm" id="input-saldo-mybca" value="${rekeningState.mybca}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">Livin' by Mandiri:</label><input type="number" class="form-control form-control-sm" id="input-saldo-livin" value="${rekeningState.livin}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">Flip:</label><input type="number" class="form-control form-control-sm" id="input-saldo-flip" value="${rekeningState.flip}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">Kas Kopkar:</label><input type="number" class="form-control form-control-sm" id="input-saldo-kopkar" value="${rekeningState.kopkar}"></div>
-              </div>
-              <button class="btn btn-primary mt-3 w-100 py-2" onclick="simpanSaldoAwal()"><i class="fas fa-save me-1"></i> Simpan Saldo Awal</button>
-            </div>`;
-          break;
-
-        case 'cetak-barcode':
-          container.innerHTML = `
-            <div class="card p-3 shadow-sm">
-              <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <div>
-                  <h6 class="m-0 fw-bold"><i class="fas fa-barcode me-2 text-primary"></i>Generator & Cetak Barcode Produk (Standar A4)</h6>
-                  <small class="text-muted" style="font-size: 0.75rem;">Nama produk tampil di atas barcode. Kapasitas maks <strong>40 barcode per lembar A4</strong>.</small>
-                </div>
-                <div class="d-flex gap-2">
-                  <button class="btn btn-primary btn-sm" onclick="tambahBarisBarcode()"><i class="fas fa-plus me-1"></i> Tambah Baris</button>
-                  <button class="btn btn-success btn-sm" onclick="downloadPdfBarcode()"><i class="fas fa-file-pdf me-1"></i> Download PDF</button>
-                </div>
-              </div>
-
-              <!-- INFO KALKULATOR HALAMAN A4 REALTIME -->
-              <div class="alert alert-info py-2 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2 small">
-                <div><i class="fas fa-info-circle me-1"></i> Total Barcode: <strong id="info-total-barcode">0 pcs</strong></div>
-                <div><span class="badge bg-primary" id="info-total-lembar">Estimasi: 0 Lembar A4 (Maks 40/lembar)</span></div>
-              </div>
-
-              <div class="table-responsive">
-                <table class="table table-bordered align-middle">
-                  <thead class="table-secondary">
-                    <tr>
-                      <th style="width: 28%;">Nama Produk (Tampil di Atas Barcode)</th>
-                      <th style="width: 25%;">Kode / No Barcode</th>
-                      <th style="width: 15%;">Jumlah Cetak</th>
-                      <th style="width: 24%;" class="text-center">Live Preview Barcode</th>
-                      <th style="width: 8%;" class="text-center">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tbody-generator-barcode">
-                    <!-- Baris generator bersih -->
-                  </tbody>
-                </table>
-              </div>
-            </div>`;
-          setTimeout(() => { updateLiveBarcodes(); hitungKalkulasiA4(); }, 100);
-          break;
-
-        case 'pengaturan':
-          container.innerHTML = `
-            <div class="row g-3">
-              <div class="col-md-6">
-                <div class="card p-3 shadow-sm h-100">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="m-0 fw-bold text-primary"><i class="fas fa-users-cog me-2"></i>Manajemen Akun Login</h6>
-                    <button class="btn btn-primary btn-sm" onclick="tambahBarisUser()"><i class="fas fa-plus me-1"></i> Tambah User</button>
-                  </div>
-                  <div class="table-responsive">
-                    <table class="table table-bordered align-middle">
-                      <thead class="table-secondary"><tr><th>Username</th><th>Role</th><th>Password</th><th class="text-center" style="width: 60px;">Aksi</th></tr></thead>
-                      <tbody id="tbody-users">
-                        <tr>
-                          <td><input type="text" class="form-control form-control-sm" value="Suwarsono"></td>
-                          <td>
-                            <select class="form-select form-select-sm">
-                              <option value="Owner" selected>Owner</option><option value="Admin">Admin</option><option value="Kasir">Kasir</option>
-                            </select>
-                          </td>
-                          <td>
-                            <div class="input-group input-group-sm">
-                              <input type="password" class="form-control" value="1234" id="pass-user-1">
-                              <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('pass-user-1', 'eye-user-1')"><i class="fas fa-eye" id="eye-user-1"></i></button>
-                            </div>
-                          </td>
-                          <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <button class="btn btn-success mt-2 btn-sm" onclick="executeWithProtection('Simpan User', () => alert('Akun Login Berhasil Diperbarui!'))"><i class="fas fa-save me-1"></i> Simpan User</button>
-                </div>
-              </div>
-
-              <div class="col-md-6">
-                <div class="card p-3 shadow-sm h-100">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="m-0 fw-bold text-success"><i class="fas fa-university me-2"></i>Manajemen Pos Rekening</h6>
-                    <button class="btn btn-success btn-sm" onclick="tambahBarisRekening()"><i class="fas fa-plus me-1"></i> Tambah Rekening</button>
-                  </div>
-                  <div class="table-responsive">
-                    <table class="table table-bordered align-middle">
-                      <thead class="table-secondary"><tr><th>Nama Akun / Pos Rekening</th><th>Tipe / Keterangan</th><th class="text-center" style="width: 60px;">Aksi</th></tr></thead>
-                      <tbody id="tbody-rekening">
-                        <tr>
-                          <td><input type="text" class="form-control form-control-sm" value="Tunai (Kas Laci)"></td>
-                          <td><input type="text" class="form-control form-control-sm" value="Kas Fisik"></td>
-                          <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
-                        </tr>
-                        <tr>
-                          <td><input type="text" class="form-control form-control-sm" value="BNI Direct"></td>
-                          <td><input type="text" class="form-control form-control-sm" value="Bank Korporat"></td>
-                          <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <button class="btn btn-success mt-2 btn-sm" onclick="executeWithProtection('Simpan Rekening', () => alert('Pos Rekening Berhasil Diperbarui!'))"><i class="fas fa-save me-1"></i> Simpan Rekening</button>
-                </div>
               </div>
             </div>`;
           break;
@@ -1179,414 +490,78 @@
       }
     }
 
-    /* FUNGSI SIMPAN SALDO AWAL KE STATE */
-    function simpanSaldoAwal() {
-      rekeningState.tunai = parseFloat(document.getElementById('input-saldo-tunai')?.value) || 0;
-      rekeningState.bniDirect = parseFloat(document.getElementById('input-saldo-bni')?.value) || 0;
-      rekeningState.qris = parseFloat(document.getElementById('input-saldo-qris')?.value) || 0;
-      rekeningState.wondr = parseFloat(document.getElementById('input-saldo-wondr')?.value) || 0;
-      rekeningState.mybca = parseFloat(document.getElementById('input-saldo-mybca')?.value) || 0;
-      rekeningState.livin = parseFloat(document.getElementById('input-saldo-livin')?.value) || 0;
-      rekeningState.flip = parseFloat(document.getElementById('input-saldo-flip')?.value) || 0;
-      rekeningState.kopkar = parseFloat(document.getElementById('input-saldo-kopkar')?.value) || 0;
+    /* FUNGSI PENCARIAN PINTAR (BARCODE ATAU NAMA BARANG) */
+    function handlePencarianBarang(keyword) {
+      const suggestionBox = document.getElementById('pencarian-suggestions');
+      if (!suggestionBox) return;
 
-      executeWithProtection('Saldo Awal', () => alert('Saldo Awal Berhasil Disimpan & Diperbarui di Dashboard!'));
-    }
-
-    /* FUNGSI HITUNG SISA LABA PADA MENU MASTER BARANG */
-    function hitungSisaLabaMaster(inputEl) {
-      const row = inputEl.closest('tr');
-      if (!row) return;
-
-      const labaEcerAsli = 0;
-      const labaDusAsli = 0;
-      const labaKodiAsli = 0;
-
-      const potEcer = parseFloat(row.querySelector('.input-potong-ecer')?.value) || 0;
-      const potDus = parseFloat(row.querySelector('.input-potong-dus')?.value) || 0;
-      const potKodi = parseFloat(row.querySelector('.input-potong-kodi')?.value) || 0;
-
-      let sisaEcer = labaEcerAsli - potEcer;
-      let sisaDus = labaDusAsli - potDus;
-      let sisaKodi = labaKodiAsli - potKodi;
-
-      row.querySelector('.sisa-laba-ecer').innerText = "Rp " + sisaEcer.toLocaleString('id-ID');
-      row.querySelector('.sisa-laba-dus').innerText = "Rp " + sisaDus.toLocaleString('id-ID');
-      row.querySelector('.sisa-laba-kodi').innerText = "Rp " + sisaKodi.toLocaleString('id-ID');
-    }
-
-    /* FUNGSI VALIDASI DISKON MAKSIMAL DI KASIR */
-    function validasiDiskonMaksimal(inputEl) {
-      const row = inputEl.closest('tr');
-      if (!row) return;
-
-      const satuanSelect = row.querySelector('.satuan-select');
-      const selectedOpt = satuanSelect?.options[satuanSelect.selectedIndex];
-      const maxDiskon = parseFloat(selectedOpt?.getAttribute('data-max-diskon')) || 0;
-
-      const diskonVal = parseFloat(inputEl.value) || 0;
-      const warningEl = document.getElementById('diskon-warning');
-
-      if (diskonVal > maxDiskon) {
-        if (warningEl) {
-          warningEl.style.display = 'block';
-          warningEl.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i> <strong>Peringatan Potongan Melebihi Batas:</strong> Potongan Rp ${diskonVal.toLocaleString('id-ID')} melebihi batas maksimal yang diizinkan (Rp ${maxDiskon.toLocaleString('id-ID')})!`;
-        }
-        inputEl.classList.add('is-invalid');
-      } else {
-        if (warningEl) warningEl.style.display = 'none';
-        inputEl.classList.remove('is-invalid');
-      }
-    }
-
-    /* FUNGSI GRAFIK & LOGIKA FILTER DASHBOARD TREND SUMBU-X OTOMATIS */
-    let salesChartInstance = null;
-    let profitChartInstance = null;
-
-    function handleModeRentangChange() {
-      const mode = document.getElementById('filter-mode-rentang')?.value;
-      const wrapTahunan = document.getElementById('wrapper-input-tahunan');
-      const wrapBulanan = document.getElementById('wrapper-input-bulanan');
-      const wrapHarian = document.getElementById('wrapper-input-harian');
-      const badgeStatus = document.getElementById('badge-status-sumbu');
-
-      if (wrapTahunan) wrapTahunan.style.display = (mode === 'tahunan') ? 'block' : 'none';
-      if (wrapBulanan) wrapBulanan.style.display = (mode === 'bulanan') ? 'block' : 'none';
-      if (wrapHarian) wrapHarian.style.display = (mode === 'harian' || mode === 'mingguan') ? 'block' : 'none';
-
-      if (badgeStatus) {
-        if (mode === 'harian') badgeStatus.innerText = 'Sumbu-X: Otomatis Harian';
-        else if (mode === 'mingguan') badgeStatus.innerText = 'Sumbu-X: Otomatis Mingguan';
-        else if (mode === 'bulanan') badgeStatus.innerText = 'Sumbu-X: Otomatis Bulanan';
-        else if (mode === 'tahunan') badgeStatus.innerText = 'Sumbu-X: Otomatis Tahunan';
-      }
-
-      updateDashboardCharts();
-    }
-
-    function initDashboardCharts() {
-      const ctxSales = document.getElementById('salesCategoryChart');
-      const ctxProfit = document.getElementById('profitCategoryChart');
-      if(!ctxSales || !ctxProfit) return;
-
-      salesChartInstance = new Chart(ctxSales, {
-        type: 'bar',
-        data: { labels: [], datasets: [{ label: 'Total Omset (Rp)', data: [], backgroundColor: '#3b82f6' }] },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
-
-      profitChartInstance = new Chart(ctxProfit, {
-        type: 'line',
-        data: { labels: [], datasets: [{ label: 'Total Laba (Rp)', data: [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)', fill: true, tension: 0.3 }] },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
-
-      updateDashboardCharts();
-    }
-
-    function updateDashboardCharts() {
-      if (!salesChartInstance || !profitChartInstance) return;
-
-      // Data kosong / nol di awal
-      salesChartInstance.data.labels = ['Okt 2026'];
-      salesChartInstance.data.datasets[0].data = [0];
-      salesChartInstance.update();
-
-      profitChartInstance.data.labels = ['Okt 2026'];
-      profitChartInstance.data.datasets[0].data = [0];
-      profitChartInstance.update();
-    }
-
-    /* LOGIKA KHUSUS MENU CETAK BARCODE (NAMA DI ATAS & KALKULATOR A4) */
-    function tambahBarisBarcode() {
-      const tbody = document.getElementById('tbody-generator-barcode');
-      if (!tbody) return;
-      const tr = document.createElement('tr');
-      const randomCode = '899' + Math.floor(100000000 + Math.random() * 900000000);
-      tr.innerHTML = `
-        <td><input type="text" class="form-control form-control-sm prod-name" value="Produk Baru" placeholder="Nama Produk" oninput="updateLiveBarcodes()"></td>
-        <td><input type="text" class="form-control form-control-sm prod-code" value="${randomCode}" placeholder="Kode Barcode" oninput="updateLiveBarcodes()"></td>
-        <td><input type="number" class="form-control form-control-sm prod-qty" value="12" min="1" max="100" oninput="hitungKalkulasiA4()"></td>
-        <td class="text-center bg-light">
-          <div style="font-size: 10px; font-weight: bold; color: #333; margin-bottom: 2px;" class="preview-title-label">Produk Baru</div>
-          <svg class="barcode-svg" data-code="${randomCode}"></svg>
-        </td>
-        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisBarcode(this); hitungKalkulasiA4();"><i class="fas fa-trash"></i></button></td>
-      `;
-      tbody.appendChild(tr);
-      updateLiveBarcodes();
-      hitungKalkulasiA4();
-    }
-
-    function hapusBarisBarcode(btn) {
-      const tr = btn.closest('tr');
-      if (tr) tr.remove();
-      hitungKalkulasiA4();
-    }
-
-    function updateLiveBarcodes() {
-      document.querySelectorAll('#tbody-generator-barcode tr').forEach(tr => {
-        const nameInput = tr.querySelector('.prod-name');
-        const codeInput = tr.querySelector('.prod-code');
-        const svgEl = tr.querySelector('.barcode-svg');
-        const titleLabel = tr.querySelector('.preview-title-label');
-
-        if (nameInput && titleLabel) {
-          titleLabel.innerText = nameInput.value.trim() || 'Produk';
-        }
-
-        if (codeInput && svgEl) {
-          const val = codeInput.value.trim() || '0000000000';
-          svgEl.setAttribute('data-code', val);
-          try {
-            JsBarcode(svgEl, val, {
-              format: "CODE128",
-              width: 1.3,
-              height: 32,
-              displayValue: true,
-              fontSize: 10,
-              margin: 2
-            });
-          } catch(e) {}
-        }
-      });
-      hitungKalkulasiA4();
-    }
-
-    function hitungKalkulasiA4() {
-      let totalQty = 0;
-      document.querySelectorAll('#tbody-generator-barcode tr').forEach(tr => {
-        const qty = parseInt(tr.querySelector('.prod-qty')?.value) || 0;
-        totalQty += qty;
-      });
-
-      const maxPerA4 = 40;
-      let totalLembar = Math.ceil(totalQty / maxPerA4);
-      if (totalLembar < 1 && totalQty > 0) totalLembar = 1;
-
-      const infoTotal = document.getElementById('info-total-barcode');
-      const infoLembar = document.getElementById('info-total-lembar');
-
-      if (infoTotal) infoTotal.innerText = `${totalQty} pcs`;
-      if (infoLembar) infoLembar.innerText = `Estimasi: ${totalLembar} Lembar A4 (Maks 40/lembar)`;
-    }
-
-    function downloadPdfBarcode() {
-      const rows = document.querySelectorAll('#tbody-generator-barcode tr');
-      let itemsToPrint = [];
-
-      rows.forEach(tr => {
-        const nameVal = tr.querySelector('.prod-name')?.value || 'Produk';
-        const codeVal = tr.querySelector('.prod-code')?.value || '00000000';
-        const qtyVal = parseInt(tr.querySelector('.prod-qty')?.value) || 1;
-
-        const canvas = document.createElement('canvas');
-        try {
-          JsBarcode(canvas, codeVal, {
-            format: "CODE128",
-            width: 1.4,
-            height: 40,
-            displayValue: true,
-            fontSize: 10,
-            margin: 2
-          });
-          const dataUrl = canvas.toDataURL('image/png');
-          for (let i = 0; i < qtyVal; i++) {
-            itemsToPrint.push({
-              stack: [
-                { text: nameVal, fontSize: 8, bold: true, alignment: 'center', color: '#111', margin: [0, 0, 0, 1] },
-                { image: dataUrl, width: 115, alignment: 'center' }
-              ],
-              margin: [4, 4, 4, 4],
-              alignment: 'center'
-            });
-          }
-        } catch(e) {}
-      });
-
-      if (itemsToPrint.length === 0) {
-        alert("Tidak ada data barcode untuk dicetak!");
+      if (!keyword || keyword.trim() === "") {
+        suggestionBox.style.display = 'none';
+        suggestionBox.innerHTML = '';
         return;
       }
 
-      let tableBody = [];
-      let currentRow = [];
-      itemsToPrint.forEach((item, index) => {
-        currentRow.push(item);
-        if (currentRow.length === 4 || index === itemsToPrint.length - 1) {
-          while (currentRow.length < 4) {
-            currentRow.push({ text: '', margin: [4, 4, 4, 4] });
-          }
-          tableBody.push(currentRow);
-          currentRow = [];
+      const query = keyword.toLowerCase();
+      // Filter berdasarkan kecocokan barcode atau nama produk dari master database
+      const filtered = masterProdukDB.filter(item => 
+        item.barcode.toLowerCase().includes(query) || item.nama.toLowerCase().includes(query)
+      );
+
+      if (filtered.length > 0) {
+        let html = '';
+        filtered.forEach(prod => {
+          html += `<button type="button" class="list-group-item list-group-item-action py-2" onclick="pilihProdukKeranjang('${prod.barcode}')">
+            <strong>${prod.nama}</strong> <small class="text-muted">(Barcode: ${prod.barcode}) - Rp ${prod.jualEcer.toLocaleString('id-ID')}</small>
+          </button>`;
+        });
+        suggestionBox.innerHTML = html;
+        suggestionBox.style.display = 'block';
+
+        // Jika pencarian persis sama dengan barcode, langsung masukkan ke keranjang secara otomatis
+        const exactMatch = filtered.find(item => item.barcode.toLowerCase() === query);
+        if (exactMatch) {
+          pilihProdukKeranjang(exactMatch.barcode);
+          suggestionBox.style.display = 'none';
         }
-      });
-
-      const totalLembar = Math.ceil(itemsToPrint.length / 40);
-      alert(`Informasi Cetak: Total ${itemsToPrint.length} barcode akan dicetak menjadi ${totalLembar} lembar A4.`);
-
-      const docDefinition = {
-        pageOrientation: 'portrait',
-        pageSize: 'A4',
-        pageMargins: [15, 15, 15, 15],
-        content: [
-          {
-            table: {
-              widths: ['25%', '25%', '25%', '25%'],
-              body: tableBody
-            },
-            layout: 'noBorders'
-          }
-        ],
-        defaultStyle: { font: 'Helvetica' }
-      };
-
-      pdfMake.createPdf(docDefinition).download(`Barcode_LTM_Mart_${itemsToPrint.length}_Pcs.pdf`);
-    }
-
-    /* LOGIKA KASIR PENJUALAN (ENTERTAINT, POTONG GAJI & TEMPO) */
-    function checkMetodeBayar(val) {
-      const wEntertaint = document.getElementById('wrapper-entertaint');
-      const wPotongGaji = document.getElementById('wrapper-potong-gaji');
-      const wTempo = document.getElementById('wrapper-tempo');
-
-      if (wEntertaint) wEntertaint.style.display = (val === 'entertaint') ? 'flex' : 'none';
-      if (wPotongGaji) wPotongGaji.style.display = (val === 'potong-gaji') ? 'flex' : 'none';
-      if (wTempo) wTempo.style.display = (val === 'tempo') ? 'flex' : 'none';
-
-      if (val === 'entertaint') {
-        alert("Mode Entertaint Aktif: Total belanja otomatis diset Rp 0 dan tercatat sebagai Biaya Operasional.");
+      } else {
+        suggestionBox.innerHTML = `<div class="list-group-item text-muted small">Produk tidak ditemukan</div>`;
+        suggestionBox.style.display = 'block';
       }
     }
 
-    let userRowCounter = 1;
-    function tambahBarisUser() {
-      userRowCounter++;
-      const tbody = document.getElementById('tbody-users');
+    /* TAMBAH PRODUK KE KERANJANG KASIR */
+    function pilihProdukKeranjang(barcode) {
+      const prod = masterProdukDB.find(item => item.barcode === barcode);
+      if (!prod) return;
+
+      const tbody = document.getElementById('cart-tbody');
+      if (!tbody) return;
+
       const tr = document.createElement('tr');
-      const passId = `pass-user-${userRowCounter}`;
-      const eyeId = `eye-user-${userRowCounter}`;
       tr.innerHTML = `
-        <td><input type="text" class="form-control form-control-sm" placeholder="Username"></td>
         <td>
-          <select class="form-select form-select-sm">
-            <option value="Owner">Owner</option><option value="Admin">Admin</option><option value="Kasir" selected>Kasir</option>
+          <div class="fw-bold">${prod.nama}</div>
+          <small class="text-muted">Barcode: ${prod.barcode}</small>
+        </td>
+        <td>
+          <select class="form-select form-select-sm satuan-select" onchange="hitungTotalBelanja()">
+            <option value="${prod.jualEcer}" data-max-diskon="${prod.maxDiskon}">Eceran / Pcs (Rp ${prod.jualEcer.toLocaleString('id-ID')})</option>
           </select>
         </td>
-        <td>
-          <div class="input-group input-group-sm">
-            <input type="password" class="form-control" placeholder="Password" id="${passId}">
-            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('${passId}', '${eyeId}')"><i class="fas fa-eye" id="${eyeId}"></i></button>
-          </div>
-        </td>
-        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
+        <td><input type="number" class="form-control form-control-sm qty-input" value="1" min="1" oninput="hitungTotalBelanja()"></td>
+        <td><input type="number" class="form-control form-control-sm diskon-input" value="0" placeholder="0" oninput="validasiDiskonMaksimal(this); hitungTotalBelanja();"></td>
+        <td class="fw-bold subtotal-text">Rp ${prod.jualEcer.toLocaleString('id-ID')}</td>
+        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisItem(this)"><i class="fas fa-trash"></i></button></td>
       `;
       tbody.appendChild(tr);
-    }
 
-    function tambahBarisRekening() {
-      const tbody = document.getElementById('tbody-rekening');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><input type="text" class="form-control form-control-sm" placeholder="Nama Akun Rekening"></td>
-        <td><input type="text" class="form-control form-control-sm" placeholder="Keterangan"></td>
-        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
-      `;
-      tbody.appendChild(tr);
-    }
+      // Reset input pencarian
+      const inputEl = document.getElementById('barcode-input');
+      if (inputEl) inputEl.value = '';
+      const suggestionBox = document.getElementById('pencarian-suggestions');
+      if (suggestionBox) suggestionBox.style.display = 'none';
 
-    function hapusBaris(btn) {
-      const tr = btn.closest('tr');
-      if (tr) tr.remove();
-    }
-
-    function toggleFormOps(val) {
-      document.getElementById('form-belanja-barang').style.display = (val === 'belanja-barang') ? 'block' : 'none';
-      document.getElementById('form-admin-bank').style.display = (val === 'admin-bank') ? 'block' : 'none';
-      document.getElementById('form-gaji-karyawan').style.display = (val === 'gaji-karyawan') ? 'block' : 'none';
-      document.getElementById('form-umum').style.display = (val === 'umum') ? 'block' : 'none';
-      hitungTotalOps();
-    }
-
-    function tambahBarisBelanjaOps() {
-      const tbody = document.getElementById('tbody-belanja-ops');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><input type="text" class="form-control form-control-sm" placeholder="Nama Barang"></td>
-        <td><input type="number" class="form-control form-control-sm" placeholder="0" oninput="hitungTotalOps()"></td>
-        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisOps(this)"><i class="fas fa-trash"></i></button></td>
-      `;
-      tbody.appendChild(tr);
-    }
-
-    function tambahBarisGajiOps() {
-      const tbody = document.getElementById('tbody-gaji-ops');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><input type="text" class="form-control form-control-sm" placeholder="Nama Karyawan"></td>
-        <td><input type="number" class="form-control form-control-sm" placeholder="0" oninput="hitungTotalOps()"></td>
-        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisOps(this)"><i class="fas fa-trash"></i></button></td>
-      `;
-      tbody.appendChild(tr);
-    }
-
-    function hapusBarisOps(btn) {
-      const tr = btn.closest('tr');
-      if (tr) {
-        tr.remove();
-        hitungTotalOps();
-      }
-    }
-
-    function hitungTotalOps() {
-      const kat = document.getElementById('kategori-ops')?.value;
-      let total = 0;
-
-      if (kat === 'belanja-barang') {
-        document.querySelectorAll('#tbody-belanja-ops input[type="number"]').forEach(input => {
-          total += parseFloat(input.value) || 0;
-        });
-      } else if (kat === 'admin-bank') {
-        total = parseFloat(document.getElementById('nominal-admin-bank')?.value) || 0;
-      } else if (kat === 'gaji-karyawan') {
-        document.querySelectorAll('#tbody-gaji-ops input[type="number"]').forEach(input => {
-          total += parseFloat(input.value) || 0;
-        });
-      } else if (kat === 'umum') {
-        total = parseFloat(document.getElementById('nominal-umum')?.value) || 0;
-      }
-
-      const totalEl = document.getElementById('total-ops-text');
-      if (totalEl) {
-        totalEl.innerText = "Rp " + Math.round(total).toLocaleString('id-ID');
-      }
-    }
-
-    function checkKeteranganPemasukan(val) {
-      const adminWrapper = document.getElementById('wrapper-biaya-admin');
-      const manualWrapper = document.getElementById('wrapper-ket-manual');
-
-      if (adminWrapper) adminWrapper.style.display = (val === 'tarik-tunai') ? 'block' : 'none';
-      if (manualWrapper) manualWrapper.style.display = (val === 'lainnya') ? 'block' : 'none';
-    }
-
-    function hitungOtomatisBayarKonsinyasi() {
-      const checkboxes = document.querySelectorAll('.chk-tagihan');
-      let total = 0;
-      checkboxes.forEach(chk => {
-        if (chk.checked) total += parseFloat(chk.value) || 0;
-      });
-      const textEl = document.getElementById('total-bayar-konsinyasi');
-      if (textEl) textEl.innerText = "Rp " + Math.round(total).toLocaleString('id-ID');
-    }
-
-    function filterTagihanSupplier(supId) {
-      hitungOtomatisBayarKonsinyasi();
-    }
-
-    function tambahProdukDariDropdown(val) {
-      if(!val) return;
-      // Logika tambah produk dinamis dari master bersih
+      hitungTotalBelanja();
     }
 
     function hapusBarisItem(btn) {
@@ -1597,23 +572,7 @@
       }
     }
 
-    function batalHapusSeluruhTransaksi() {
-      if (confirm("Apakah Anda yakin ingin MEMBATALKAN seluruh transaksi ini?")) {
-        const tbody = document.getElementById('cart-tbody');
-        if (tbody) tbody.innerHTML = '';
-        hitungTotalBelanja();
-        alert("Transaksi dibatalkan.");
-      }
-    }
-
     function hitungTotalBelanja() {
-      const metodeBayar = document.getElementById('metode-bayar')?.value;
-      if (metodeBayar === 'entertaint') {
-        const grandTotalEl = document.getElementById('grand-total');
-        if(grandTotalEl) grandTotalEl.innerText = "Rp 0 (Gratis - Masuk Ops)";
-        return;
-      }
-
       const rows = document.querySelectorAll('#cart-tbody tr');
       let grandTotal = 0;
 
@@ -1640,105 +599,83 @@
       if(grandTotalEl) grandTotalEl.innerText = "Rp " + Math.round(grandTotal).toLocaleString('id-ID');
     }
 
+    function validasiDiskonMaksimal(inputEl) {
+      const row = inputEl.closest('tr');
+      if (!row) return;
+      const satuanSelect = row.querySelector('.satuan-select');
+      const selectedOpt = satuanSelect?.options[satuanSelect.selectedIndex];
+      const maxDiskon = parseFloat(selectedOpt?.getAttribute('data-max-diskon')) || 0;
+      const diskonVal = parseFloat(inputEl.value) || 0;
+      const warningEl = document.getElementById('diskon-warning');
+
+      if (diskonVal > maxDiskon) {
+        if (warningEl) {
+          warningEl.style.display = 'block';
+          warningEl.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i> Potongan Rp ${diskonVal.toLocaleString('id-ID')} melebihi batas maksimal (Rp ${maxDiskon.toLocaleString('id-ID')})!`;
+        }
+        inputEl.classList.add('is-invalid');
+      } else {
+        if (warningEl) warningEl.style.display = 'none';
+        inputEl.classList.remove('is-invalid');
+      }
+    }
+
+    function batalHapusSeluruhTransaksi() {
+      if (confirm("Apakah Anda yakin ingin membatalkan transaksi ini?")) {
+        const tbody = document.getElementById('cart-tbody');
+        if (tbody) tbody.innerHTML = '';
+        hitungTotalBelanja();
+      }
+    }
+
+    function checkMetodeBayar(val) {
+      const wEntertaint = document.getElementById('wrapper-entertaint');
+      if (wEntertaint) wEntertaint.style.display = (val === 'entertaint') ? 'flex' : 'none';
+    }
+
     function toggleRekeningBayar(val) {
       const wrapper = document.getElementById('rekening-bayar-wrapper');
       if(wrapper) wrapper.style.display = (val === 'beli-langsung') ? 'block' : 'none';
     }
 
-    function togglePcsPerKemasan(val) {
-      const wrapper = document.getElementById('pcs-wrapper');
-      if(wrapper) wrapper.style.display = (val === 'dus' || val === 'kodi') ? 'block' : 'none';
-      hitungHppOtomatis();
-    }
-
-    function hitungHppOtomatis() {
-      const satuan = document.getElementById('satuan-terima')?.value;
-      const qtyMasuk = parseFloat(document.getElementById('qty-masuk')?.value) || 0;
-      const totalNominal = parseFloat(document.getElementById('total-nominal-kulakan')?.value) || 0;
-      const pcsPerKemasan = parseFloat(document.getElementById('qty-per-kemasan')?.value) || 1;
-
-      let totalPcs = qtyMasuk;
-      if (satuan === 'dus' || satuan === 'kodi') totalPcs = qtyMasuk * pcsPerKemasan;
-
-      let hppPcs = (totalPcs > 0 && totalNominal > 0) ? (totalNominal / totalPcs) : 0;
-      let hppDus = hppPcs * (satuan === 'dus' ? pcsPerKemasan : 24);
-      let hppKodi = hppPcs * (satuan === 'kodi' ? pcsPerKemasan : 20);
-
-      const textEl = document.getElementById('hpp-konversi-text');
-      if (textEl) {
-        textEl.innerText = `Ecer: Rp ${Math.round(hppPcs).toLocaleString('id-ID')} | Dus: Rp ${Math.round(hppDus).toLocaleString('id-ID')} | Kodi: Rp ${Math.round(hppKodi).toLocaleString('id-ID')}`;
-      }
-    }
-
-    function setBarcode(val) { document.getElementById('barcode-input').value = val; }
-
-    function initOpsTrendChart() {
-      const ctx = document.getElementById('opsTrendChart');
-      if(!ctx) return;
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Okt 2026'],
-          datasets: [
-            { label: 'Belanja Barang', data: [0], backgroundColor: '#3b82f6' },
-            { label: 'Admin Bank', data: [0], backgroundColor: '#ef4444' },
-            { label: 'Gaji Karyawan', data: [0], backgroundColor: '#10b981' },
-            { label: 'Utilitas Umum', data: [0], backgroundColor: '#f59e0b' }
-          ]
-        },
-        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
-      });
-    }
-
-    function exportToExcel(tableID, filename) {
-      const table = document.getElementById(tableID);
-      const wb = XLSX.utils.table_to_book(table, {sheet: "Laporan"});
-      XLSX.writeFile(wb, filename);
-    }
-
-    async function startCamera(callback) {
+    /* FUNGSI UTAMA KAMERA SCANNER (HTML5-QRCODE) */
+    function startCamera(callback) {
       activeScanCallback = callback;
       const modal = new bootstrap.Modal(document.getElementById('scannerModal'));
       modal.show();
-      document.getElementById('scanner-container').style.display = 'block';
 
-      try {
-        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } })
-          .catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
-
-        const video = document.getElementById('video-preview');
-        video.srcObject = videoStream;
-
-        if ('BarcodeDetector' in window) {
-          const detector = new BarcodeDetector();
-          const detect = async () => {
-            if (!videoStream) return;
-            try {
-              const barcodes = await detector.detect(video);
-              if (barcodes.length > 0) {
-                activeScanCallback(barcodes[0].rawValue);
-                stopCamera();
-                modal.hide();
-                return;
-              }
-            } catch (e) {}
-            requestAnimationFrame(detect);
-          };
-          detect();
-        } else {
-          alert("Gunakan browser Chrome / Edge HP untuk scan.");
+      setTimeout(() => {
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("reader");
         }
-      } catch (err) {
-        alert("Akses kamera gagal: " + err.message);
-      }
+        
+        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+        
+        html5QrCode.start(
+          { facingMode: "environment" }, 
+          config, 
+          (decodedText) => {
+            if (activeScanCallback) {
+              activeScanCallback(decodedText);
+            }
+            stopCamera();
+            modal.hide();
+          },
+          (errorMessage) => {}
+        ).catch(err => {
+          alert("Tidak dapat mengakses kamera belakang. Pastikan izin kamera diizinkan (Allow) pada browser HP Anda. Error: " + err);
+        });
+      }, 300);
     }
 
     function stopCamera() {
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        videoStream = null;
+      if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+        }).catch(err => {
+          console.error("Gagal menghentikan kamera.", err);
+        });
       }
-      document.getElementById('scanner-container').style.display = 'none';
     }
 
     window.onload = () => switchMenu('dashboard');
