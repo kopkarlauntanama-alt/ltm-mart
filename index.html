@@ -100,7 +100,7 @@
       </div>
     </div>
 
-    <!-- Modal Switch Login dengan Fitur Show/Hide Password & Reset Password -->
+    <!-- Modal Switch Login -->
     <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -168,7 +168,7 @@
     let loginFailAttempt = 0;
 
     const titles = {
-      'dashboard': 'Dashboard Keuangan (Trend Penjualan & Laba per Kategori)',
+      'dashboard': 'Dashboard Keuangan (Filter Trend Penjualan & Laba per Kategori/Periode)',
       'kasir': 'Kasir Penjualan (Batal/Hapus Transaksi & FIFO Stok)',
       'riwayat': 'Riwayat Nota Transaksi',
       'stok': 'Stok Barang & Opname Deviasi',
@@ -312,29 +312,71 @@
               <div class="col-md-3"><div class="card card-metric bg-info text-dark p-3"><small>Aset Barang Konsinyasi</small><h3 class="m-0">Rp 15.300.000</h3><small class="text-muted">Total HPP Konsinyasi Ter-update</small></div></div>
             </div>
 
-            <!-- Filter Periode Trend -->
-            <div class="card p-3 mb-3 bg-white shadow-sm">
+            <!-- Global Control Filter Utama -->
+            <div class="card p-3 mb-4 bg-white shadow-sm border-0">
+              <h6 class="fw-bold text-dark mb-3"><i class="fas fa-filter me-2 text-primary"></i>Pengaturan Filter Utama Trend Periode</h6>
               <div class="row g-2 align-items-center">
                 <div class="col-md-4">
-                  <label class="form-label fw-bold small m-0">Pilih Periode Analisis Trend:</label>
-                  <select class="form-select form-select-sm" id="filter-periode-trend" onchange="updateDashboardCharts()">
-                    <option value="bulanan">Bulanan (Bulan Kemarin vs Minggu Berjalan)</option>
+                  <label class="form-label fw-bold small m-0">Pilihan Periode Trend:</label>
+                  <select class="form-select form-select-sm" id="filter-jenis-periode" onchange="toggleCustomDateFilter(); updateDashboardCharts();">
+                    <option value="mingguan">Mingguan (7 Hari Terakhir / Per Hari)</option>
+                    <option value="bulanan" selected>Bulanan (Bulan Kemarin vs Bulan Berjalan)</option>
                     <option value="tahunan">Tahunan (Perbandingan Antar Tahun)</option>
+                    <option value="custom">Rentang Tanggal (Custom Date Range)</option>
                   </select>
+                </div>
+                
+                <div class="col-md-8" id="wrapper-custom-date" style="display:none;">
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label fw-bold small m-0">Dari Tanggal:</label>
+                      <input type="date" class="form-control form-control-sm" id="filter-start-date" value="${getTodayDate()}" onchange="updateDashboardCharts()">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label fw-bold small m-0">Sampai Tanggal:</label>
+                      <input type="date" class="form-control form-control-sm" id="filter-end-date" value="${getTodayDate()}" onchange="updateDashboardCharts()">
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
+            <!-- Chart Penjualan dan Laba -->
             <div class="row g-3">
+              <!-- GRAFIK TREND PENJUALAN -->
               <div class="col-md-6">
-                <div class="card p-3 mb-4 shadow-sm">
-                  <h5 class="mb-3"><i class="fas fa-chart-bar me-2 text-primary"></i>Trend Penjualan per Kategori</h5>
+                <div class="card p-3 mb-4 shadow-sm border-0">
+                  <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <h5 class="m-0 fs-6 fw-bold text-primary"><i class="fas fa-chart-bar me-2"></i>Trend Penjualan</h5>
+                    <div style="width: 180px;">
+                      <select class="form-select form-select-sm border-primary" id="filter-kat-penjualan" onchange="updateDashboardCharts()">
+                        <option value="semua">Semua Kategori</option>
+                        <option value="minuman">Minuman & Snack</option>
+                        <option value="obat">Obat / Kesehatan</option>
+                        <option value="atk">ATK & Kantor</option>
+                        <option value="sarung">Sarung & Bamus</option>
+                      </select>
+                    </div>
+                  </div>
                   <canvas id="salesCategoryChart" style="max-height: 280px;"></canvas>
                 </div>
               </div>
+
+              <!-- GRAFIK TREND LABA -->
               <div class="col-md-6">
-                <div class="card p-3 mb-4 shadow-sm">
-                  <h5 class="mb-3"><i class="fas fa-chart-line me-2 text-success"></i>Trend Laba per Kategori</h5>
+                <div class="card p-3 mb-4 shadow-sm border-0">
+                  <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <h5 class="m-0 fs-6 fw-bold text-success"><i class="fas fa-chart-line me-2"></i>Trend Laba</h5>
+                    <div style="width: 180px;">
+                      <select class="form-select form-select-sm border-success" id="filter-kat-laba" onchange="updateDashboardCharts()">
+                        <option value="semua">Semua Kategori</option>
+                        <option value="minuman">Minuman & Snack</option>
+                        <option value="obat">Obat / Kesehatan</option>
+                        <option value="atk">ATK & Kantor</option>
+                        <option value="sarung">Sarung & Bamus</option>
+                      </select>
+                    </div>
+                  </div>
                   <canvas id="profitCategoryChart" style="max-height: 280px;"></canvas>
                 </div>
               </div>
@@ -748,7 +790,6 @@
                   <input type="number" class="form-control form-control-lg" placeholder="0" id="nominal-pemasukan">
                 </div>
 
-                <!-- Kolom Biaya Admin Tambahan Khusus Tarik Tunai -->
                 <div class="col-md-4" id="wrapper-biaya-admin" style="display:none;">
                   <label class="form-label fw-bold text-success"><i class="fas fa-coins me-1"></i> Biaya Admin (Masuk Laba Langsung) (Rp):</label>
                   <input type="number" class="form-control form-control-lg border-success" placeholder="0" id="biaya-admin-input">
@@ -1008,7 +1049,6 @@
         case 'pengaturan':
           container.innerHTML = `
             <div class="row g-3">
-              <!-- Pengaturan Login User -->
               <div class="col-md-6">
                 <div class="card p-3 shadow-sm h-100">
                   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -1067,7 +1107,6 @@
                 </div>
               </div>
 
-              <!-- Pengaturan Pos Rekening -->
               <div class="col-md-6">
                 <div class="card p-3 shadow-sm h-100">
                   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -1112,6 +1151,124 @@
           container.innerHTML = `<div class="card p-4 text-center"><h5>Menu ${titles[menu] || menu} Aktif</h5></div>`;
           break;
       }
+    }
+
+    /* FUNGSI GRAFIK & FILTER DASHBOARD TREND */
+    let salesChartInstance = null;
+    let profitChartInstance = null;
+
+    function toggleCustomDateFilter() {
+      const jenisPeriode = document.getElementById('filter-jenis-periode')?.value;
+      const customWrapper = document.getElementById('wrapper-custom-date');
+      if (customWrapper) {
+        customWrapper.style.display = (jenisPeriode === 'custom') ? 'block' : 'none';
+      }
+    }
+
+    function initDashboardCharts() {
+      const ctxSales = document.getElementById('salesCategoryChart');
+      const ctxProfit = document.getElementById('profitCategoryChart');
+      if(!ctxSales || !ctxProfit) return;
+
+      salesChartInstance = new Chart(ctxSales, {
+        type: 'bar',
+        data: {
+          labels: ['Minuman & Snack', 'Obat / Kesehatan', 'ATK & Kantor', 'Sarung & Bamus'],
+          datasets: [
+            { label: 'Periode Sebelumnya', data: [12000000, 4500000, 3200000, 8500000], backgroundColor: '#3b82f6' },
+            { label: 'Periode Berjalan', data: [13500000, 5100000, 3900000, 9200000], backgroundColor: '#10b981' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      profitChartInstance = new Chart(ctxProfit, {
+        type: 'line',
+        data: {
+          labels: ['Minuman & Snack', 'Obat / Kesehatan', 'ATK & Kantor', 'Sarung & Bamus'],
+          datasets: [
+            { label: 'Laba Periode Sebelumnya', data: [2400000, 900000, 640000, 1700000], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true },
+            { label: 'Laba Periode Berjalan', data: [2700000, 1020000, 780000, 1840000], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function updateDashboardCharts() {
+      if (!salesChartInstance || !profitChartInstance) return;
+
+      const jenisPeriode = document.getElementById('filter-jenis-periode')?.value;
+      const katPenjualan = document.getElementById('filter-kat-penjualan')?.value;
+      const katLaba = document.getElementById('filter-kat-laba')?.value;
+
+      // Data dummy dinamis berdasarkan Filter Penjualan
+      let labelPenjualan = ['Minuman & Snack', 'Obat / Kesehatan', 'ATK & Kantor', 'Sarung & Bamus'];
+      let dataPrevSales = [12000000, 4500000, 3200000, 8500000];
+      let dataCurrentSales = [13500000, 5100000, 3900000, 9200000];
+
+      if (katPenjualan === 'minuman') {
+        labelPenjualan = ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'];
+        dataPrevSales = [3000000, 3200000, 2800000, 3000000];
+        dataCurrentSales = [3500000, 3400000, 3100000, 3500000];
+      } else if (katPenjualan === 'obat') {
+        labelPenjualan = ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'];
+        dataPrevSales = [1000000, 1200000, 1100000, 1200000];
+        dataCurrentSales = [1300000, 1250000, 1150000, 1400000];
+      }
+
+      if (jenisPeriode === 'mingguan') {
+        salesChartInstance.data.datasets[0].label = '7 Hari Lalu';
+        salesChartInstance.data.datasets[1].label = '7 Hari Ini';
+      } else if (jenisPeriode === 'tahunan') {
+        salesChartInstance.data.datasets[0].label = 'Tahun 2025';
+        salesChartInstance.data.datasets[1].label = 'Tahun 2026 (YTD)';
+      } else if (jenisPeriode === 'custom') {
+        salesChartInstance.data.datasets[0].label = 'Rentang Pembanding';
+        salesChartInstance.data.datasets[1].label = 'Rentang Tanggal Dipilih';
+      } else {
+        salesChartInstance.data.datasets[0].label = 'Bulan Kemarin';
+        salesChartInstance.data.datasets[1].label = 'Bulan Berjalan';
+      }
+
+      salesChartInstance.data.labels = labelPenjualan;
+      salesChartInstance.data.datasets[0].data = dataPrevSales;
+      salesChartInstance.data.datasets[1].data = dataCurrentSales;
+      salesChartInstance.update();
+
+      // Data dummy dinamis berdasarkan Filter Laba
+      let labelLaba = ['Minuman & Snack', 'Obat / Kesehatan', 'ATK & Kantor', 'Sarung & Bamus'];
+      let dataPrevProfit = [2400000, 900000, 640000, 1700000];
+      let dataCurrentProfit = [2700000, 1020000, 780000, 1840000];
+
+      if (katLaba === 'minuman') {
+        labelLaba = ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'];
+        dataPrevProfit = [600000, 640000, 560000, 600000];
+        dataCurrentProfit = [700000, 680000, 620000, 700000];
+      } else if (katLaba === 'sarung') {
+        labelLaba = ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'];
+        dataPrevProfit = [400000, 450000, 420000, 430000];
+        dataCurrentProfit = [480000, 460000, 440000, 460000];
+      }
+
+      if (jenisPeriode === 'mingguan') {
+        profitChartInstance.data.datasets[0].label = 'Laba 7 Hari Lalu';
+        profitChartInstance.data.datasets[1].label = 'Laba 7 Hari Ini';
+      } else if (jenisPeriode === 'tahunan') {
+        profitChartInstance.data.datasets[0].label = 'Laba Tahun 2025';
+        profitChartInstance.data.datasets[1].label = 'Laba Tahun 2026';
+      } else if (jenisPeriode === 'custom') {
+        profitChartInstance.data.datasets[0].label = 'Laba Pembanding';
+        profitChartInstance.data.datasets[1].label = 'Laba Rentang Tanggal';
+      } else {
+        profitChartInstance.data.datasets[0].label = 'Laba Bulan Kemarin';
+        profitChartInstance.data.datasets[1].label = 'Laba Bulan Berjalan';
+      }
+
+      profitChartInstance.data.labels = labelLaba;
+      profitChartInstance.data.datasets[0].data = dataPrevProfit;
+      profitChartInstance.data.datasets[1].data = dataCurrentProfit;
+      profitChartInstance.update();
     }
 
     function tambahBarisBarcode() {
@@ -1167,7 +1324,6 @@
         const codeVal = tr.querySelector('.prod-code')?.value || '00000000';
         const qtyVal = parseInt(tr.querySelector('.prod-qty')?.value) || 1;
 
-        // Generate temporary canvas to convert barcode SVG to DataURL for pdfMake
         const canvas = document.createElement('canvas');
         try {
           JsBarcode(canvas, codeVal, {
@@ -1197,7 +1353,6 @@
         return;
       }
 
-      // Group into table rows of 4 columns to fit A4 perfectly
       let tableBody = [];
       let currentRow = [];
       itemsToPrint.forEach((item, index) => {
@@ -1271,71 +1426,6 @@
     function hapusBaris(btn) {
       const tr = btn.closest('tr');
       if (tr) tr.remove();
-    }
-
-    let salesChartInstance = null;
-    let profitChartInstance = null;
-
-    function initDashboardCharts() {
-      const ctxSales = document.getElementById('salesCategoryChart');
-      const ctxProfit = document.getElementById('profitCategoryChart');
-      if(!ctxSales || !ctxProfit) return;
-
-      const categories = ['Minuman & Snack', 'Obat', 'ATK', 'Sarung & Bamus'];
-
-      salesChartInstance = new Chart(ctxSales, {
-        type: 'bar',
-        data: {
-          labels: categories,
-          datasets: [
-            { label: 'Bulan Kemarin', data: [12000000, 4500000, 3200000, 8500000], backgroundColor: '#3b82f6' },
-            { label: 'Minggu Berjalan', data: [3500000, 1200000, 950000, 2400000], backgroundColor: '#10b981' }
-          ]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
-
-      profitChartInstance = new Chart(ctxProfit, {
-        type: 'line',
-        data: {
-          labels: categories,
-          datasets: [
-            { label: 'Laba Bulan Kemarin', data: [2400000, 900000, 640000, 1700000], borderColor: '#3b82f6', fill: false },
-            { label: 'Laba Minggu Berjalan', data: [700000, 240000, 190000, 480000], borderColor: '#10b981', fill: false }
-          ]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
-    }
-
-    function updateDashboardCharts() {
-      const filter = document.getElementById('filter-periode-trend')?.value;
-      if (!salesChartInstance || !profitChartInstance) return;
-
-      if (filter === 'tahunan') {
-        salesChartInstance.data.datasets[0].label = 'Tahun 2025';
-        salesChartInstance.data.datasets[0].data = [145000000, 52000000, 38000000, 95000000];
-        salesChartInstance.data.datasets[1].label = 'Tahun 2026 (YTD)';
-        salesChartInstance.data.datasets[1].data = [160000000, 58000000, 42000000, 110000000];
-
-        profitChartInstance.data.datasets[0].label = 'Laba Tahun 2025';
-        profitChartInstance.data.datasets[0].data = [29000000, 10400000, 7600000, 19000000];
-        profitChartInstance.data.datasets[1].label = 'Laba Tahun 2026 (YTD)';
-        profitChartInstance.data.datasets[1].data = [32000000, 11600000, 8400000, 22000000];
-      } else {
-        salesChartInstance.data.datasets[0].label = 'Bulan Kemarin';
-        salesChartInstance.data.datasets[0].data = [12000000, 4500000, 3200000, 8500000];
-        salesChartInstance.data.datasets[1].label = 'Minggu Berjalan';
-        salesChartInstance.data.datasets[1].data = [3500000, 1200000, 950000, 2400000];
-
-        profitChartInstance.data.datasets[0].label = 'Laba Bulan Kemarin';
-        profitChartInstance.data.datasets[0].data = [2400000, 900000, 640000, 1700000];
-        profitChartInstance.data.datasets[1].label = 'Laba Minggu Berjalan';
-        profitChartInstance.data.datasets[1].data = [700000, 240000, 190000, 480000];
-      }
-
-      salesChartInstance.update();
-      profitChartInstance.update();
     }
 
     function toggleFormOps(val) {
