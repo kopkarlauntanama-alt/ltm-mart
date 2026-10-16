@@ -157,7 +157,7 @@
       'master': 'Master Barang & Harga (Rincian HPP Eceran, Dus, Kodi)',
       'konsinyasi': 'Laporan Barang Konsinyasi (Export .XLSX Supplier)',
       'bayar-konsinyasi': 'Pembayaran Tagihan Konsinyasi (Centang Periode & Nominal Otomatis)',
-      'pemasukan': 'Pemasukan Luar / Tarik Tunai & Fee CV',
+      'pemasukan': 'Pemasukan Luar / Tarik Tunai & Fee CV (Fee & Biaya Admin)',
       'operasional': 'Biaya Operasional Toko',
       'gaji': 'Pembayaran Gaji Pegawai & Potong Gaji HRD',
       'mutasi': 'Mutasi Rekening & Pelunasan BNI Direct (Overpay)',
@@ -552,10 +552,8 @@
                     <option value="livin-mandiri">Livin' by Mandiri</option>
                     <option value="flip">Flip</option>
                   </select>
-                  <small class="text-muted">Jika saldo rekening kurang, lakukan mutasi antar rekening terlebih dahulu.</small>
                 </div>
 
-                <!-- Daftar Periode Tagihan Bulanan (Dilengkapi Checkbox Centang) -->
                 <div class="col-md-12 mt-3">
                   <label class="form-label fw-bold text-dark"><i class="fas fa-calendar-alt me-1 text-primary"></i> Daftar Periode Tagihan Bulanan Belum Dibayar:</label>
                   <div class="table-responsive border rounded bg-white">
@@ -581,20 +579,11 @@
                         </tr>
                         <tr>
                           <td class="text-center">
-                            <input type="checkbox" class="form-check-input chk-tagihan" value="150000" onchange="hitungOtomatisBayarKonsinyasi()">
+                            <input type="checkbox" class="form-check-input chk-tagihan" value="144000" onchange="hitungOtomatisBayarKonsinyasi()">
                           </td>
                           <td class="fw-bold text-primary">September 2026</td>
-                          <td>18 Pcs Keripik Tempe Terjual (HPP Rp 8.000) - Sisa Tagihan</td>
+                          <td>18 Pcs Keripik Tempe Terjual (HPP Rp 8.000)</td>
                           <td class="fw-bold">Rp 144.000</td>
-                          <td><span class="badge bg-warning text-dark">Belum Dibayar</span></td>
-                        </tr>
-                        <tr>
-                          <td class="text-center">
-                            <input type="checkbox" class="form-check-input chk-tagihan" value="100000" onchange="hitungOtomatisBayarKonsinyasi()">
-                          </td>
-                          <td class="fw-bold text-primary">Agustus 2026</td>
-                          <td>12 Pcs Keripik Tempe Terjual</td>
-                          <td class="fw-bold">Rp 96.000</td>
                           <td><span class="badge bg-warning text-dark">Belum Dibayar</span></td>
                         </tr>
                       </tbody>
@@ -602,7 +591,6 @@
                   </div>
                 </div>
 
-                <!-- Input Nominal Total Pembayaran Otomatis -->
                 <div class="col-md-12 mt-3">
                   <div class="p-3 bg-light border rounded d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
@@ -614,7 +602,7 @@
                 </div>
               </div>
 
-              <button class="btn btn-success mt-4 w-100 py-3 fs-5" onclick="executeWithProtection('Pembayaran Tagihan Konsinyasi', () => alert('Pembayaran Tagihan Konsinyasi Berhasil Diproses! Sisa tagihan periode ter-update.'))">
+              <button class="btn btn-success mt-4 w-100 py-3 fs-5" onclick="executeWithProtection('Pembayaran Tagihan Konsinyasi', () => alert('Pembayaran Tagihan Konsinyasi Berhasil Diproses!'))">
                 <i class="fas fa-check-circle me-1"></i> Proses Pelunasan Tagihan Konsinyasi Selected
               </button>
             </div>`;
@@ -623,15 +611,56 @@
         case 'pemasukan':
           container.innerHTML = `
             <div class="card p-3">
-              <h5><i class="fas fa-funnel-dollar me-2"></i>Pemasukan Luar (Tarik Tunai & Jasa Penggajian CV)</h5>
+              <h5><i class="fas fa-funnel-dollar me-2"></i>Pemasukan Luar / Dana Masuk Non-Penjualan Retail</h5>
               <div class="row g-3 mt-1">
-                <div class="col-md-3"><label class="form-label fw-bold">Keterangan:</label><input type="text" class="form-control" placeholder="Fee Payroll"></div>
-                <div class="col-md-3">
-                  <label class="form-label fw-bold">Rekening Tujuan:</label>
-                  <select class="form-select"><option value="tunai">Tunai</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS BNI</option><option value="wondr-bni">wondr by BNI</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin' Mandiri</option><option value="flip">Flip</option><option value="kas-kopkar">Kas Kopkar</option></select>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Keterangan Pemasukan:</label>
+                  <select class="form-select border-primary" id="pilihan-keterangan-pemasukan" onchange="checkKeteranganPemasukan(this.value)">
+                    <option value="piutang-kopkar">Pembayaran Piutang Kopkar</option>
+                    <option value="hutang-kopkar">Penambahan Hutang Kopkar</option>
+                    <option value="penjualan-tempo">Pembayaran Penjualan Tempo</option>
+                    <option value="fee-payroll">Fee Payroll</option>
+                    <option value="tarik-tunai">Tarik Tunai (Jasa Gesek / Cashout)</option>
+                    <option value="lainnya">Lainnya (Input Manual)</option>
+                  </select>
                 </div>
-                <div class="col-md-3"><label class="form-label fw-bold">Nominal (Rp):</label><input type="number" class="form-control" placeholder="0"></div>
-                <div class="col-md-3 d-flex align-items-end"><button class="btn btn-success w-100" onclick="executeWithProtection('Pemasukan', () => alert('Pemasukan Disimpan!'))"><i class="fas fa-save me-1"></i> Simpan</button></div>
+
+                <div class="col-md-4" id="wrapper-ket-manual" style="display:none;">
+                  <label class="form-label fw-bold">Keterangan Manual:</label>
+                  <input type="text" class="form-control" id="ket-manual-input" placeholder="Ketik keterangan pemasukan...">
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Rekening Tujuan Masuk Saldo:</label>
+                  <select class="form-select border-success">
+                    <option value="tunai">Tunai (Kas Laci)</option>
+                    <option value="bni-direct">BNI Direct / Transfer BNI</option>
+                    <option value="qris-bni">QRIS BNI</option>
+                    <option value="wondr-bni">wondr by BNI</option>
+                    <option value="mybca">myBCA</option>
+                    <option value="livin-mandiri">Livin' by Mandiri</option>
+                    <option value="flip">Flip</option>
+                    <option value="kas-kopkar">Kas Kopkar</option>
+                  </select>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Nominal Utama (Rp):</label>
+                  <input type="number" class="form-control form-control-lg" placeholder="0" id="nominal-pemasukan">
+                </div>
+
+                <!-- Kolom Biaya Admin Tambahan Khusus Tarik Tunai -->
+                <div class="col-md-4" id="wrapper-biaya-admin" style="display:none;">
+                  <label class="form-label fw-bold text-success"><i class="fas fa-coins me-1"></i> Biaya Admin (Masuk Laba Langsung) (Rp):</label>
+                  <input type="number" class="form-control form-control-lg border-success" placeholder="0" id="biaya-admin-input">
+                  <small class="text-success">Biaya admin ini akan otomatis dicatat sebagai keuntungan/laba toko.</small>
+                </div>
+
+                <div class="col-md-12 mt-4">
+                  <button class="btn btn-success btn-lg w-100 py-2" onclick="executeWithProtection('Pemasukan Luar', () => alert('Pemasukan Berhasil Dicatat & Saldo Rekening/Laba Terupdate!'))">
+                    <i class="fas fa-save me-1"></i> Simpan Pemasukan Luar
+                  </button>
+                </div>
               </div>
             </div>`;
           break;
@@ -722,6 +751,18 @@
         default:
           container.innerHTML = `<div class="card p-4 text-center"><h5>Menu ${titles[menu] || menu} Aktif</h5></div>`;
           break;
+      }
+    }
+
+    function checkKeteranganPemasukan(val) {
+      const adminWrapper = document.getElementById('wrapper-biaya-admin');
+      const manualWrapper = document.getElementById('wrapper-ket-manual');
+
+      if (adminWrapper) {
+        adminWrapper.style.display = (val === 'tarik-tunai') ? 'block' : 'none';
+      }
+      if (manualWrapper) {
+        manualWrapper.style.display = (val === 'lainnya') ? 'block' : 'none';
       }
     }
 
