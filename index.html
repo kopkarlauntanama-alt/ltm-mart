@@ -7,9 +7,12 @@
   <!-- Bootstrap 5 CSS & FontAwesome -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <!-- Chart.js & SheetJS (XLSX Export) -->
+  <!-- Chart.js, SheetJS (XLSX), JsBarcode & pdfMake -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; }
     .sidebar { width: 260px; position: fixed; top: 0; bottom: 0; left: 0; background-color: #1a2c42; color: #fff; z-index: 1000; overflow-y: auto; transition: all 0.3s ease; }
@@ -953,13 +956,53 @@
 
         case 'cetak-barcode':
           container.innerHTML = `
-            <div class="card p-3">
-              <h5><i class="fas fa-barcode me-2"></i>Generator & Cetak Barcode</h5>
-              <div class="row g-2 mt-2">
-                <div class="col-md-6"><input type="text" class="form-control" placeholder="Kode Barcode"></div>
-                <div class="col-md-6"><button class="btn btn-dark w-100" onclick="alert('Mencetak...')"><i class="fas fa-print me-1"></i> Cetak</button></div>
+            <div class="card p-3 shadow-sm">
+              <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                  <h5 class="m-0"><i class="fas fa-barcode me-2 text-primary"></i>Generator & Cetak Barcode Produk Minuman (Standar A4)</h5>
+                  <small class="text-muted">Barcode otomatis tampil saat diketik. Ukuran & layout dioptimalkan pas untuk produk minuman dan muat maksimal dalam kertas A4.</small>
+                </div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-primary btn-sm" onclick="tambahBarisBarcode()"><i class="fas fa-plus me-1"></i> Tambah Baris</button>
+                  <button class="btn btn-success btn-sm" onclick="downloadPdfBarcode()"><i class="fas fa-file-pdf me-1"></i> Download PDF Barcode</button>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                  <thead class="table-secondary">
+                    <tr>
+                      <th style="width: 28%;">Nama Produk (Tampil di Atas Barcode)</th>
+                      <th style="width: 25%;">Kode / No Barcode</th>
+                      <th style="width: 15%;">Jumlah Cetak</th>
+                      <th style="width: 24%;" class="text-center">Live Preview Barcode</th>
+                      <th style="width: 8%;" class="text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-generator-barcode">
+                    <tr>
+                      <td><input type="text" class="form-control form-control-sm prod-name" value="Teh Botol Sosro 350ml" placeholder="Nama Produk" oninput="updateLiveBarcodes()"></td>
+                      <td><input type="text" class="form-control form-control-sm prod-code" value="899276100123" placeholder="Kode Barcode" oninput="updateLiveBarcodes()"></td>
+                      <td><input type="number" class="form-control form-control-sm prod-qty" value="12" min="1" max="100"></td>
+                      <td class="text-center bg-light">
+                        <svg class="barcode-svg" data-code="899276100123"></svg>
+                      </td>
+                      <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisBarcode(this)"><i class="fas fa-trash"></i></button></td>
+                    </tr>
+                    <tr>
+                      <td><input type="text" class="form-control form-control-sm prod-name" value="Aqua 600ml" placeholder="Nama Produk" oninput="updateLiveBarcodes()"></td>
+                      <td><input type="text" class="form-control form-control-sm prod-code" value="899138810234" placeholder="Kode Barcode" oninput="updateLiveBarcodes()"></td>
+                      <td><input type="number" class="form-control form-control-sm prod-qty" value="12" min="1" max="100"></td>
+                      <td class="text-center bg-light">
+                        <svg class="barcode-svg" data-code="899138810234"></svg>
+                      </td>
+                      <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisBarcode(this)"><i class="fas fa-trash"></i></button></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>`;
+          setTimeout(updateLiveBarcodes, 100);
           break;
 
         case 'pengaturan':
@@ -1069,6 +1112,122 @@
           container.innerHTML = `<div class="card p-4 text-center"><h5>Menu ${titles[menu] || menu} Aktif</h5></div>`;
           break;
       }
+    }
+
+    function tambahBarisBarcode() {
+      const tbody = document.getElementById('tbody-generator-barcode');
+      if (!tbody) return;
+      const tr = document.createElement('tr');
+      const randomCode = '899' + Math.floor(100000000 + Math.random() * 900000000);
+      tr.innerHTML = `
+        <td><input type="text" class="form-control form-control-sm prod-name" value="Produk Minuman Baru" placeholder="Nama Produk" oninput="updateLiveBarcodes()"></td>
+        <td><input type="text" class="form-control form-control-sm prod-code" value="${randomCode}" placeholder="Kode Barcode" oninput="updateLiveBarcodes()"></td>
+        <td><input type="number" class="form-control form-control-sm prod-qty" value="12" min="1" max="100"></td>
+        <td class="text-center bg-light">
+          <svg class="barcode-svg" data-code="${randomCode}"></svg>
+        </td>
+        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisBarcode(this)"><i class="fas fa-trash"></i></button></td>
+      `;
+      tbody.appendChild(tr);
+      updateLiveBarcodes();
+    }
+
+    function hapusBarisBarcode(btn) {
+      const tr = btn.closest('tr');
+      if (tr) tr.remove();
+    }
+
+    function updateLiveBarcodes() {
+      document.querySelectorAll('#tbody-generator-barcode tr').forEach(tr => {
+        const codeInput = tr.querySelector('.prod-code');
+        const svgEl = tr.querySelector('.barcode-svg');
+        if (codeInput && svgEl) {
+          const val = codeInput.value.trim() || '0000000000';
+          svgEl.setAttribute('data-code', val);
+          try {
+            JsBarcode(svgEl, val, {
+              format: "CODE128",
+              width: 1.3,
+              height: 35,
+              displayValue: true,
+              fontSize: 10,
+              margin: 2
+            });
+          } catch(e) {}
+        }
+      });
+    }
+
+    function downloadPdfBarcode() {
+      const rows = document.querySelectorAll('#tbody-generator-barcode tr');
+      let itemsToPrint = [];
+
+      rows.forEach(tr => {
+        const nameVal = tr.querySelector('.prod-name')?.value || 'Produk';
+        const codeVal = tr.querySelector('.prod-code')?.value || '00000000';
+        const qtyVal = parseInt(tr.querySelector('.prod-qty')?.value) || 1;
+
+        // Generate temporary canvas to convert barcode SVG to DataURL for pdfMake
+        const canvas = document.createElement('canvas');
+        try {
+          JsBarcode(canvas, codeVal, {
+            format: "CODE128",
+            width: 1.5,
+            height: 45,
+            displayValue: true,
+            fontSize: 11,
+            margin: 2
+          });
+          const dataUrl = canvas.toDataURL('image/png');
+          for (let i = 0; i < qtyVal; i++) {
+            itemsToPrint.push({
+              stack: [
+                { text: nameVal, fontSize: 8, bold: true, alignment: 'center', color: '#333', margin: [0, 0, 0, 2] },
+                { image: dataUrl, width: 120, alignment: 'center' }
+              ],
+              margin: [5, 5, 5, 5],
+              alignment: 'center'
+            });
+          }
+        } catch(e) {}
+      });
+
+      if (itemsToPrint.length === 0) {
+        alert("Tidak ada data barcode untuk dicetak!");
+        return;
+      }
+
+      // Group into table rows of 4 columns to fit A4 perfectly
+      let tableBody = [];
+      let currentRow = [];
+      itemsToPrint.forEach((item, index) => {
+        currentRow.push(item);
+        if (currentRow.length === 4 || index === itemsToPrint.length - 1) {
+          while (currentRow.length < 4) {
+            currentRow.push({ text: '', margin: [5, 5, 5, 5] });
+          }
+          tableBody.push(currentRow);
+          currentRow = [];
+        }
+      });
+
+      const docDefinition = {
+        pageOrientation: 'portrait',
+        pageSize: 'A4',
+        pageMargins: [15, 15, 15, 15],
+        content: [
+          {
+            table: {
+              widths: ['25%', '25%', '25%', '25%'],
+              body: tableBody
+            },
+            layout: 'noBorders'
+          }
+        ],
+        defaultStyle: { font: 'Helvetica' }
+      };
+
+      pdfMake.createPdf(docDefinition).download('Barcode_Minuman_LTM_Mart.pdf');
     }
 
     let userRowCounter = 2;
