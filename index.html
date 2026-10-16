@@ -156,7 +156,7 @@
       'barang-masuk': 'Barang Masuk / Kulakan Baru (Multi-Satuan & HPP Konversi)',
       'master': 'Master Barang & Harga (Rincian HPP Eceran, Dus, Kodi)',
       'konsinyasi': 'Laporan Barang Konsinyasi (Export .XLSX Supplier)',
-      'bayar-konsinyasi': 'Pembayaran Tagihan Konsinyasi',
+      'bayar-konsinyasi': 'Pembayaran Tagihan Konsinyasi (Centang Periode & Nominal Otomatis)',
       'pemasukan': 'Pemasukan Luar / Tarik Tunai & Fee CV',
       'operasional': 'Biaya Operasional Toko',
       'gaji': 'Pembayaran Gaji Pegawai & Potong Gaji HRD',
@@ -530,17 +530,93 @@
           container.innerHTML = `
             <div class="card p-3">
               <h5><i class="fas fa-file-invoice-dollar me-2"></i>Pembayaran Tagihan Barang Konsinyasi ke Supplier</h5>
+              <p class="text-muted small">Pilih supplier, centang periode tagihan bulanan yang akan dibayar, lalu pilih pos rekening untuk pelunasan.</p>
+              
               <div class="row g-3 mt-1">
-                <div class="col-md-6"><label class="form-label fw-bold">Pilih Supplier & Tagihan:</label><select class="form-select"><option>Supplier Snack Bu Siti (Rp 200.000)</option></select></div>
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Pilih Pos Rekening Pembayaran:</label>
-                  <select class="form-select border-success">
-                    <option value="tunai">Tunai (Kas Laci)</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS BNI</option><option value="wondr-bni">wondr by BNI</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin' by Mandiri</option><option value="flip">Flip</option>
+                  <label class="form-label fw-bold">Pilih Supplier Konsinyasi:</label>
+                  <select class="form-select border-primary" id="pilih-supplier-konsinyasi" onchange="filterTagihanSupplier(this.value)">
+                    <option value="sup1">Supplier Snack Bu Siti</option>
+                    <option value="sup2">Supplier Batik & Apparel Malang</option>
                   </select>
                 </div>
-                <div class="col-md-6"><label class="form-label fw-bold">Nominal Pembayaran (Rp):</label><input type="number" class="form-control" value="200000"></div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Pilih Pos Rekening Pembayaran (Tunggal):</label>
+                  <select class="form-select border-success">
+                    <option value="tunai">Tunai (Kas Laci)</option>
+                    <option value="bni-direct">BNI Direct / Transfer BNI</option>
+                    <option value="qris-bni">QRIS BNI</option>
+                    <option value="wondr-bni">wondr by BNI</option>
+                    <option value="mybca">myBCA</option>
+                    <option value="livin-mandiri">Livin' by Mandiri</option>
+                    <option value="flip">Flip</option>
+                  </select>
+                  <small class="text-muted">Jika saldo rekening kurang, lakukan mutasi antar rekening terlebih dahulu.</small>
+                </div>
+
+                <!-- Daftar Periode Tagihan Bulanan (Dilengkapi Checkbox Centang) -->
+                <div class="col-md-12 mt-3">
+                  <label class="form-label fw-bold text-dark"><i class="fas fa-calendar-alt me-1 text-primary"></i> Daftar Periode Tagihan Bulanan Belum Dibayar:</label>
+                  <div class="table-responsive border rounded bg-white">
+                    <table class="table table-hover align-middle m-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width: 50px;" class="text-center">Bayar</th>
+                          <th>Periode Bulan Tagihan</th>
+                          <th>Keterangan / Total Rincian Terjual</th>
+                          <th>Nominal Tagihan HPP</th>
+                          <th>Status Periode</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td class="text-center">
+                            <input type="checkbox" class="form-check-input chk-tagihan" value="200000" onchange="hitungOtomatisBayarKonsinyasi()" checked>
+                          </td>
+                          <td class="fw-bold text-primary">Oktober 2026</td>
+                          <td>25 Pcs Keripik Tempe Terjual (HPP Rp 8.000)</td>
+                          <td class="fw-bold">Rp 200.000</td>
+                          <td><span class="badge bg-warning text-dark">Belum Dibayar</span></td>
+                        </tr>
+                        <tr>
+                          <td class="text-center">
+                            <input type="checkbox" class="form-check-input chk-tagihan" value="150000" onchange="hitungOtomatisBayarKonsinyasi()">
+                          </td>
+                          <td class="fw-bold text-primary">September 2026</td>
+                          <td>18 Pcs Keripik Tempe Terjual (HPP Rp 8.000) - Sisa Tagihan</td>
+                          <td class="fw-bold">Rp 144.000</td>
+                          <td><span class="badge bg-warning text-dark">Belum Dibayar</span></td>
+                        </tr>
+                        <tr>
+                          <td class="text-center">
+                            <input type="checkbox" class="form-check-input chk-tagihan" value="100000" onchange="hitungOtomatisBayarKonsinyasi()">
+                          </td>
+                          <td class="fw-bold text-primary">Agustus 2026</td>
+                          <td>12 Pcs Keripik Tempe Terjual</td>
+                          <td class="fw-bold">Rp 96.000</td>
+                          <td><span class="badge bg-warning text-dark">Belum Dibayar</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Input Nominal Total Pembayaran Otomatis -->
+                <div class="col-md-12 mt-3">
+                  <div class="p-3 bg-light border rounded d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                      <label class="form-label fw-bold m-0 text-success fs-5">Total Nominal Tagihan yang Dibayar (Otomatis):</label>
+                      <br><small class="text-muted">Total ini terhitung otomatis sesuai centang periode tagihan di atas.</small>
+                    </div>
+                    <h2 class="text-success fw-bold m-0" id="total-bayar-konsinyasi">Rp 200.000</h2>
+                  </div>
+                </div>
               </div>
-              <button class="btn btn-success mt-4 w-100 py-2" onclick="executeWithProtection('Bayar Konsinyasi', () => alert('Pembayaran Konsinyasi Berhasil!'))"><i class="fas fa-check-circle me-1"></i> Proses Pelunasan</button>
+
+              <button class="btn btn-success mt-4 w-100 py-3 fs-5" onclick="executeWithProtection('Pembayaran Tagihan Konsinyasi', () => alert('Pembayaran Tagihan Konsinyasi Berhasil Diproses! Sisa tagihan periode ter-update.'))">
+                <i class="fas fa-check-circle me-1"></i> Proses Pelunasan Tagihan Konsinyasi Selected
+              </button>
             </div>`;
           break;
 
@@ -647,6 +723,24 @@
           container.innerHTML = `<div class="card p-4 text-center"><h5>Menu ${titles[menu] || menu} Aktif</h5></div>`;
           break;
       }
+    }
+
+    function hitungOtomatisBayarKonsinyasi() {
+      const checkboxes = document.querySelectorAll('.chk-tagihan');
+      let total = 0;
+      checkboxes.forEach(chk => {
+        if (chk.checked) {
+          total += parseFloat(chk.value) || 0;
+        }
+      });
+      const textEl = document.getElementById('total-bayar-konsinyasi');
+      if (textEl) {
+        textEl.innerText = "Rp " + Math.round(total).toLocaleString('id-ID');
+      }
+    }
+
+    function filterTagihanSupplier(supId) {
+      hitungOtomatisBayarKonsinyasi();
     }
 
     function tambahProdukDariDropdown(val) {
@@ -772,8 +866,8 @@
       }
 
       let hppPcs = (totalPcs > 0 && totalNominal > 0) ? (totalNominal / totalPcs) : 0;
-      let hppDus = hppPcs * (satuan === 'dus' ? pcsPerKemasan : 24); // Estimasi standar dus
-      let hppKodi = hppPcs * (satuan === 'kodi' ? pcsPerKemasan : 20); // Estimasi standar kodi
+      let hppDus = hppPcs * (satuan === 'dus' ? pcsPerKemasan : 24);
+      let hppKodi = hppPcs * (satuan === 'kodi' ? pcsPerKemasan : 20);
 
       const textEl = document.getElementById('hpp-konversi-text');
       if (textEl) {
