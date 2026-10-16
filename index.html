@@ -171,8 +171,8 @@
     let videoStream = null;
     let loginFailAttempt = 0;
 
-    // Database Array Global Pos Rekening yang Sinkron antara Dashboard & Pengaturan Sistem
-    let rekeningList = [
+    // --- INTEGRASI LOCALSTORAGE: BACA POS REKENING SECARA PERMANEN ---
+    const defaultRekeningList = [
       { nama: "Tunai (Kas Laci)", tipe: "Kas Fisik", saldo: 0 },
       { nama: "BNI Direct", tipe: "Bank Korporat", saldo: 0 },
       { nama: "QRIS BNI", tipe: "E-Wallet / QRIS", saldo: 0 },
@@ -182,6 +182,22 @@
       { nama: "Flip", tipe: "Transfer Agent", saldo: 0 },
       { nama: "Kas Kopkar", tipe: "Kas Koperasi", saldo: 0 }
     ];
+
+    function loadRekeningFromStorage() {
+      const saved = localStorage.getItem('ltm_rekening_list');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch(e) {
+          return defaultRekeningList;
+        }
+      } else {
+        localStorage.setItem('ltm_rekening_list', JSON.stringify(defaultRekeningList));
+        return defaultRekeningList;
+      }
+    }
+
+    let rekeningList = loadRekeningFromStorage();
 
     const titles = {
       'dashboard': 'Dashboard Keuangan (Akumulasi Piutang, Hutang, Konsinyasi & Saldo Rekening)',
@@ -309,10 +325,18 @@
       document.querySelectorAll('.sidebar .nav-link').forEach(el => el.classList.remove('active'));
       if(evt && evt.currentTarget) evt.currentTarget.classList.add('active');
       document.getElementById('page-title').innerText = titles[menu] || 'LTM Mart';
+      
+      // Always sync latest state before rendering
+      rekeningList = loadRekeningFromStorage();
+      
       renderContent(menu);
       if (window.innerWidth <= 768) {
         document.getElementById('sidebar').classList.remove('mobile-show');
       }
+    }
+
+    function generateRekeningOptionsHtml() {
+      return rekeningList.map(rek => `<option value="${rek.nama}">${rek.nama}</option>`).join('');
     }
 
     function renderContent(menu) {
@@ -324,7 +348,7 @@
             <div class="col-md-3 col-sm-6">
               <div class="p-3 bg-light rounded border">
                 <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-wallet text-success me-1"></i> ${rek.nama}</small>
-                <h5 class="fw-bold text-dark m-0 mt-1">Rp ${rek.saldo.toLocaleString('id-ID')}</h5>
+                <h5 class="fw-bold text-dark m-0 mt-1">Rp ${(rek.saldo || 0).toLocaleString('id-ID')}</h5>
               </div>
             </div>
           `).join('');
@@ -482,6 +506,7 @@
           break;
 
         case 'kasir':
+          let rekOptKasir = generateRekeningOptionsHtml();
           container.innerHTML = `
             <div class="card p-3">
               <div class="row g-2 mb-3">
@@ -499,13 +524,7 @@
                 <div class="col-md-4">
                   <label class="form-label fw-bold small">Kategori Pembayaran:</label>
                   <select class="form-select form-select-sm border-success" id="metode-bayar" onchange="checkMetodeBayar(this.value)">
-                    <option value="tunai">Tunai (Kas Laci)</option>
-                    <option value="qris-bni">QRIS BNI</option>
-                    <option value="bni-direct">BNI Direct / Transfer BNI</option>
-                    <option value="wondr-bni">wondr by BNI</option>
-                    <option value="mybca">myBCA</option>
-                    <option value="livin-mandiri">Livin' by Mandiri</option>
-                    <option value="flip">Flip</option>
+                    ${rekOptKasir}
                     <option value="entertaint" class="text-warning fw-bold">✨ Entertaint (Pembelian Gratis - Masuk Ops)</option>
                     <option value="potong-gaji">Potong Gaji Bulanan (Cut-Off 16-15)</option>
                     <option value="tempo">Penjualan Tempo (Bebas Waktu)</option>
@@ -629,6 +648,7 @@
           break;
 
         case 'barang-masuk':
+          let rekOptMasuk = generateRekeningOptionsHtml();
           container.innerHTML = `
             <div class="card p-3">
               <h6 class="fw-bold"><i class="fas fa-box-open me-2"></i>Input Barang Masuk / Kulakan (Multi-Satuan & Konversi HPP)</h6>
@@ -682,7 +702,7 @@
                 <div class="col-md-12" id="rekening-bayar-wrapper" style="display:none;">
                   <label class="form-label fw-bold small text-success">Pilih Pos Rekening Pembayaran Kulakan:</label>
                   <select class="form-select form-select-sm border-success">
-                    <option value="tunai">Tunai (Kas Laci)</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option>
+                    ${rekOptMasuk}
                   </select>
                 </div>
               </div>
@@ -741,6 +761,7 @@
           break;
 
         case 'bayar-konsinyasi':
+          let rekOptBayarKons = generateRekeningOptionsHtml();
           container.innerHTML = `
             <div class="card p-3">
               <h6 class="fw-bold"><i class="fas fa-file-invoice-dollar me-2"></i>Pembayaran Tagihan Barang Konsinyasi ke Supplier</h6>
@@ -760,7 +781,7 @@
                 <div class="col-md-4">
                   <label class="form-label fw-bold small">Pilih Pos Rekening Pembayaran:</label>
                   <select class="form-select form-select-sm border-success">
-                    <option value="tunai">Tunai (Kas Laci)</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option>
+                    ${rekOptBayarKons}
                   </select>
                 </div>
 
@@ -802,6 +823,7 @@
           break;
 
         case 'pemasukan':
+          let rekOptMasukSaldo = generateRekeningOptionsHtml();
           container.innerHTML = `
             <div class="card p-3">
               <h6 class="fw-bold"><i class="fas fa-funnel-dollar me-2"></i>Pemasukan Luar / Dana Masuk Non-Penjualan Retail</h6>
@@ -830,7 +852,7 @@
                 <div class="col-md-4">
                   <label class="form-label fw-bold small">Rekening Tujuan Masuk Saldo:</label>
                   <select class="form-select form-select-sm border-success">
-                    <option value="tunai">Tunai (Kas Laci)</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option><option value="kas-kopkar">Kas Kopkar</option>
+                    ${rekOptMasukSaldo}
                   </select>
                 </div>
 
@@ -855,6 +877,7 @@
           break;
 
         case 'operasional':
+          let rekOptOps = generateRekeningOptionsHtml();
           container.innerHTML = `
             <div class="card p-3">
               <h6 class="fw-bold"><i class="fas fa-lightbulb me-2"></i>Biaya Operasional Toko (Multi-Item Belanja, Admin Bank, Gaji & Trend Bulanan)</h6>
@@ -878,7 +901,7 @@
                 <div class="col-md-4">
                   <label class="form-label fw-bold small">Sumber Rekening Pembayaran:</label>
                   <select class="form-select form-select-sm border-success">
-                    <option value="tunai">Tunai (Kas Laci)</option><option value="bni-direct">BNI Direct</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option>
+                    ${rekOptOps}
                   </select>
                 </div>
               </div>
@@ -991,6 +1014,7 @@
           break;
 
         case 'mutasi':
+          let rekOptMutasi = generateRekeningOptionsHtml();
           container.innerHTML = `
             <div class="card p-3">
               <h6 class="fw-bold"><i class="fas fa-university me-2"></i>Mutasi Rekening (Transfer Antar Pos)</h6>
@@ -1001,11 +1025,11 @@
                 </div>
                 <div class="col-md-3">
                   <label class="form-label fw-bold small">Dari Rekening Asal:</label>
-                  <select class="form-select form-select-sm"><option value="bni-direct">BNI Direct</option><option value="tunai">Tunai</option><option value="qris-bni">QRIS</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option></select>
+                  <select class="form-select form-select-sm">${rekOptMutasi}</select>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label fw-bold small">Ke Rekening Tujuan:</label>
-                  <select class="form-select form-select-sm"><option value="tunai">Tunai</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS</option><option value="wondr-bni">wondr</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin'</option><option value="flip">Flip</option></select>
+                  <select class="form-select form-select-sm">${rekOptMutasi}</select>
                 </div>
                 <div class="col-md-3"><label class="form-label fw-bold small">Nominal (Rp):</label><input type="number" class="form-control form-control-sm" placeholder="0"></div>
               </div>
@@ -1017,7 +1041,7 @@
           let saldoInputsHtml = rekeningList.map((rek, idx) => `
             <div class="col-md-4">
               <label class="form-label fw-bold small">${rek.nama}:</label>
-              <input type="number" class="form-control form-control-sm input-saldo-rek" data-index="${idx}" value="${rek.saldo}">
+              <input type="number" class="form-control form-control-sm input-saldo-rek" data-index="${idx}" value="${rek.saldo || 0}">
             </div>
           `).join('');
 
@@ -1072,10 +1096,10 @@
           break;
 
         case 'pengaturan':
-          let rekeningTableRows = rekeningList.map((rek, index) => `
+          let rekeningTableRows = rekeningList.map((rek) => `
             <tr>
-              <td><input type="text" class="form-control form-control-sm rek-nama" value="${rek.nama}"></td>
-              <td><input type="text" class="form-control form-control-sm rek-tipe" value="${rek.tipe}"></td>
+              <td><input type="text" class="form-control form-control-sm rek-nama" value="${rek.nama || ''}"></td>
+              <td><input type="text" class="form-control form-control-sm rek-tipe" value="${rek.tipe || ''}"></td>
               <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisSettingRekening(this)"><i class="fas fa-trash"></i></button></td>
             </tr>
           `).join('');
@@ -1140,7 +1164,7 @@
       }
     }
 
-    /* FUNGSI PENGELOLAAN POS REKENING & SALDO AWAL */
+    /* FUNGSI PENGELOLAAN POS REKENING & SALDO AWAL (TERHUBUNG KE LOCALSTORAGE) */
     function tambahBarisRekeningSetting() {
       const tbody = document.getElementById('tbody-rekening');
       if(!tbody) return;
@@ -1173,7 +1197,8 @@
       });
 
       rekeningList = newRekeningList;
-      alert("Pos Rekening berhasil diperbarui dan diselaraskan ke Dashboard secara realtime!");
+      localStorage.setItem('ltm_rekening_list', JSON.stringify(rekeningList));
+      alert("Pos Rekening berhasil disimpan permanen dan diselaraskan ke seluruh menu serta Dashboard!");
     }
 
     function simpanSaldoAwal() {
@@ -1185,6 +1210,7 @@
           rekeningList[idx].saldo = val;
         }
       });
+      localStorage.setItem('ltm_rekening_list', JSON.stringify(rekeningList));
       executeWithProtection('Saldo Awal', () => alert('Saldo Awal Berhasil Disimpan & Diperbarui di Dashboard!'));
     }
 
