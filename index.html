@@ -171,17 +171,17 @@
     let videoStream = null;
     let loginFailAttempt = 0;
 
-    // Database state lokal untuk menyimpan saldo pos rekening secara realtime
-    let rekeningState = {
-      tunai: 0,
-      bniDirect: 0,
-      qris: 0,
-      wondr: 0,
-      mybca: 0,
-      livin: 0,
-      flip: 0,
-      kopkar: 0
-    };
+    // Database Array Global Pos Rekening yang Sinkron antara Dashboard & Pengaturan Sistem
+    let rekeningList = [
+      { nama: "Tunai (Kas Laci)", tipe: "Kas Fisik", saldo: 0 },
+      { nama: "BNI Direct", tipe: "Bank Korporat", saldo: 0 },
+      { nama: "QRIS BNI", tipe: "E-Wallet / QRIS", saldo: 0 },
+      { nama: "wondr by BNI", tipe: "Mobile Banking", saldo: 0 },
+      { nama: "myBCA", tipe: "Bank Swasta", saldo: 0 },
+      { nama: "Livin' by Mandiri", tipe: "Bank BUMN", saldo: 0 },
+      { nama: "Flip", tipe: "Transfer Agent", saldo: 0 },
+      { nama: "Kas Kopkar", tipe: "Kas Koperasi", saldo: 0 }
+    ];
 
     const titles = {
       'dashboard': 'Dashboard Keuangan (Akumulasi Piutang, Hutang, Konsinyasi & Saldo Rekening)',
@@ -320,6 +320,15 @@
 
       switch(menu) {
         case 'dashboard':
+          let rekeningCardsHtml = rekeningList.map(rek => `
+            <div class="col-md-3 col-sm-6">
+              <div class="p-3 bg-light rounded border">
+                <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-wallet text-success me-1"></i> ${rek.nama}</small>
+                <h5 class="fw-bold text-dark m-0 mt-1">Rp ${rek.saldo.toLocaleString('id-ID')}</h5>
+              </div>
+            </div>
+          `).join('');
+
           container.innerHTML = `
             <!-- Metrik Utama Keuangan -->
             <div class="row g-3 mb-4">
@@ -329,58 +338,11 @@
               <div class="col-md-3"><div class="card card-metric bg-info text-dark p-3"><small>Aset Barang Konsinyasi</small><h4 class="m-0 fw-bold" id="dash-konsinyasi-val">Rp 0</h4><small class="text-muted" id="dash-konsinyasi-status" style="font-size: 0.75rem;">Belum Lunas</small></div></div>
             </div>
 
-            <!-- BAGIAN BARU: NOMINAL UANG DI TIAP-TIAP POS REKENING -->
+            <!-- POS REKENING DINAMIS (SINKRON DENGAN PENGATURAN) -->
             <div class="card p-3 mb-4 bg-white shadow-sm border-0 border-start border-success border-4">
               <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;"><i class="fas fa-wallet me-2 text-success"></i>Posisi Saldo & Nominal Uang di Tiap-Tiap Rekening (Realtime)</h6>
               <div class="row g-3">
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-money-bill-wave text-success me-1"></i> Tunai (Kas Laci)</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-tunai">Rp ${rekeningState.tunai.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-university text-primary me-1"></i> BNI Direct</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-bni-direct">Rp ${rekeningState.bniDirect.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-qrcode text-danger me-1"></i> QRIS BNI</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-qris">Rp ${rekeningState.qris.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-mobile-alt text-warning me-1"></i> wondr by BNI</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-wondr">Rp ${rekeningState.wondr.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-credit-card text-info me-1"></i> myBCA</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-mybca">Rp ${rekeningState.mybca.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-wallet text-secondary me-1"></i> Livin' by Mandiri</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-livin">Rp ${rekeningState.livin.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-exchange-alt text-primary me-1"></i> Flip</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-flip">Rp ${rekeningState.flip.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                  <div class="p-3 bg-light rounded border">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-building text-dark me-1"></i> Kas Kopkar</small>
-                    <h5 class="fw-bold text-dark m-0 mt-1" id="saldo-kopkar">Rp ${rekeningState.kopkar.toLocaleString('id-ID')}</h5>
-                  </div>
-                </div>
+                ${rekeningCardsHtml}
               </div>
             </div>
 
@@ -1052,18 +1014,18 @@
           break;
 
         case 'saldo-awal':
+          let saldoInputsHtml = rekeningList.map((rek, idx) => `
+            <div class="col-md-4">
+              <label class="form-label fw-bold small">${rek.nama}:</label>
+              <input type="number" class="form-control form-control-sm input-saldo-rek" data-index="${idx}" value="${rek.saldo}">
+            </div>
+          `).join('');
+
           container.innerHTML = `
             <div class="card p-3">
               <h6 class="fw-bold"><i class="fas fa-wallet me-2"></i>Saldo Awal Akuntansi Terperinci</h6>
               <div class="row g-2 mt-2">
-                <div class="col-md-4"><label class="form-label fw-bold small">Tunai (Kas Laci):</label><input type="number" class="form-control form-control-sm" id="input-saldo-tunai" value="${rekeningState.tunai}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">BNI Direct:</label><input type="number" class="form-control form-control-sm" id="input-saldo-bni" value="${rekeningState.bniDirect}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">QRIS BNI:</label><input type="number" class="form-control form-control-sm" id="input-saldo-qris" value="${rekeningState.qris}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">wondr by BNI:</label><input type="number" class="form-control form-control-sm" id="input-saldo-wondr" value="${rekeningState.wondr}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">myBCA:</label><input type="number" class="form-control form-control-sm" id="input-saldo-mybca" value="${rekeningState.mybca}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">Livin' by Mandiri:</label><input type="number" class="form-control form-control-sm" id="input-saldo-livin" value="${rekeningState.livin}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">Flip:</label><input type="number" class="form-control form-control-sm" id="input-saldo-flip" value="${rekeningState.flip}"></div>
-                <div class="col-md-4"><label class="form-label fw-bold small">Kas Kopkar:</label><input type="number" class="form-control form-control-sm" id="input-saldo-kopkar" value="${rekeningState.kopkar}"></div>
+                ${saldoInputsHtml}
               </div>
               <button class="btn btn-primary mt-3 w-100 py-2" onclick="simpanSaldoAwal()"><i class="fas fa-save me-1"></i> Simpan Saldo Awal</button>
             </div>`;
@@ -1110,6 +1072,14 @@
           break;
 
         case 'pengaturan':
+          let rekeningTableRows = rekeningList.map((rek, index) => `
+            <tr>
+              <td><input type="text" class="form-control form-control-sm rek-nama" value="${rek.nama}"></td>
+              <td><input type="text" class="form-control form-control-sm rek-tipe" value="${rek.tipe}"></td>
+              <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisSettingRekening(this)"><i class="fas fa-trash"></i></button></td>
+            </tr>
+          `).join('');
+
           container.innerHTML = `
             <div class="row g-3">
               <div class="col-md-6">
@@ -1148,26 +1118,17 @@
                 <div class="card p-3 shadow-sm h-100">
                   <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="m-0 fw-bold text-success"><i class="fas fa-university me-2"></i>Manajemen Pos Rekening</h6>
-                    <button class="btn btn-success btn-sm" onclick="tambahBarisRekening()"><i class="fas fa-plus me-1"></i> Tambah Rekening</button>
+                    <button class="btn btn-success btn-sm" onclick="tambahBarisRekeningSetting()"><i class="fas fa-plus me-1"></i> Tambah Rekening</button>
                   </div>
                   <div class="table-responsive">
                     <table class="table table-bordered align-middle">
                       <thead class="table-secondary"><tr><th>Nama Akun / Pos Rekening</th><th>Tipe / Keterangan</th><th class="text-center" style="width: 60px;">Aksi</th></tr></thead>
                       <tbody id="tbody-rekening">
-                        <tr>
-                          <td><input type="text" class="form-control form-control-sm" value="Tunai (Kas Laci)"></td>
-                          <td><input type="text" class="form-control form-control-sm" value="Kas Fisik"></td>
-                          <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
-                        </tr>
-                        <tr>
-                          <td><input type="text" class="form-control form-control-sm" value="BNI Direct"></td>
-                          <td><input type="text" class="form-control form-control-sm" value="Bank Korporat"></td>
-                          <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
-                        </tr>
+                        ${rekeningTableRows}
                       </tbody>
                     </table>
                   </div>
-                  <button class="btn btn-success mt-2 btn-sm" onclick="executeWithProtection('Simpan Rekening', () => alert('Pos Rekening Berhasil Diperbarui!'))"><i class="fas fa-save me-1"></i> Simpan Rekening</button>
+                  <button class="btn btn-success mt-2 btn-sm" onclick="simpanPengaturanRekening()"><i class="fas fa-save me-1"></i> Simpan Rekening</button>
                 </div>
               </div>
             </div>`;
@@ -1179,17 +1140,51 @@
       }
     }
 
-    /* FUNGSI SIMPAN SALDO AWAL KE STATE */
-    function simpanSaldoAwal() {
-      rekeningState.tunai = parseFloat(document.getElementById('input-saldo-tunai')?.value) || 0;
-      rekeningState.bniDirect = parseFloat(document.getElementById('input-saldo-bni')?.value) || 0;
-      rekeningState.qris = parseFloat(document.getElementById('input-saldo-qris')?.value) || 0;
-      rekeningState.wondr = parseFloat(document.getElementById('input-saldo-wondr')?.value) || 0;
-      rekeningState.mybca = parseFloat(document.getElementById('input-saldo-mybca')?.value) || 0;
-      rekeningState.livin = parseFloat(document.getElementById('input-saldo-livin')?.value) || 0;
-      rekeningState.flip = parseFloat(document.getElementById('input-saldo-flip')?.value) || 0;
-      rekeningState.kopkar = parseFloat(document.getElementById('input-saldo-kopkar')?.value) || 0;
+    /* FUNGSI PENGELOLAAN POS REKENING & SALDO AWAL */
+    function tambahBarisRekeningSetting() {
+      const tbody = document.getElementById('tbody-rekening');
+      if(!tbody) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" class="form-control form-control-sm rek-nama" placeholder="Nama Akun Rekening"></td>
+        <td><input type="text" class="form-control form-control-sm rek-tipe" placeholder="Keterangan"></td>
+        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisSettingRekening(this)"><i class="fas fa-trash"></i></button></td>
+      `;
+      tbody.appendChild(tr);
+    }
 
+    function hapusBarisSettingRekening(btn) {
+      const tr = btn.closest('tr');
+      if (tr) tr.remove();
+    }
+
+    function simpanPengaturanRekening() {
+      const rows = document.querySelectorAll('#tbody-rekening tr');
+      let newRekeningList = [];
+
+      rows.forEach(row => {
+        const nama = row.querySelector('.rek-nama')?.value.trim();
+        const tipe = row.querySelector('.rek-tipe')?.value.trim();
+        if(nama) {
+          let existing = rekeningList.find(r => r.nama.toLowerCase() === nama.toLowerCase());
+          let saldo = existing ? existing.saldo : 0;
+          newRekeningList.push({ nama, tipe, saldo });
+        }
+      });
+
+      rekeningList = newRekeningList;
+      alert("Pos Rekening berhasil diperbarui dan diselaraskan ke Dashboard secara realtime!");
+    }
+
+    function simpanSaldoAwal() {
+      const inputs = document.querySelectorAll('.input-saldo-rek');
+      inputs.forEach(input => {
+        const idx = parseInt(input.getAttribute('data-index'));
+        const val = parseFloat(input.value) || 0;
+        if(rekeningList[idx]) {
+          rekeningList[idx].saldo = val;
+        }
+      });
       executeWithProtection('Saldo Awal', () => alert('Saldo Awal Berhasil Disimpan & Diperbarui di Dashboard!'));
     }
 
@@ -1287,7 +1282,6 @@
     function updateDashboardCharts() {
       if (!salesChartInstance || !profitChartInstance) return;
 
-      // Data kosong / nol di awal
       salesChartInstance.data.labels = ['Okt 2026'];
       salesChartInstance.data.datasets[0].data = [0];
       salesChartInstance.update();
@@ -1484,17 +1478,6 @@
       tbody.appendChild(tr);
     }
 
-    function tambahBarisRekening() {
-      const tbody = document.getElementById('tbody-rekening');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><input type="text" class="form-control form-control-sm" placeholder="Nama Akun Rekening"></td>
-        <td><input type="text" class="form-control form-control-sm" placeholder="Keterangan"></td>
-        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
-      `;
-      tbody.appendChild(tr);
-    }
-
     function hapusBaris(btn) {
       const tr = btn.closest('tr');
       if (tr) tr.remove();
@@ -1586,7 +1569,6 @@
 
     function tambahProdukDariDropdown(val) {
       if(!val) return;
-      // Logika tambah produk dinamis dari master bersih
     }
 
     function hapusBarisItem(btn) {
