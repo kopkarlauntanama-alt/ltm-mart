@@ -3,24 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LTM Mart - Sistem Kasir & Manajemen</title>
-  <!-- Bootstrap CSS & FontAwesome -->
+  <title>LTM Mart - Sistem Operasional Kasir & Keuangan</title>
+  <!-- Bootstrap 5 CSS & FontAwesome -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Chart.js & SheetJS (XLSX Export) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; }
-    .sidebar { width: 250px; position: fixed; top: 0; bottom: 0; left: 0; background-color: #1e293b; color: #fff; z-index: 1000; overflow-y: auto; transition: all 0.3s; }
-    .sidebar .brand { padding: 20px 15px; font-size: 1.2rem; font-weight: bold; background-color: #0f172a; border-bottom: 1px solid #334155; }
-    .sidebar .nav-link { color: #94a3b8; padding: 12px 20px; border-left: 4px solid transparent; }
-    .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: #334155; border-left-color: #3b82f6; }
+    .sidebar { width: 260px; position: fixed; top: 0; bottom: 0; left: 0; background-color: #1a2c42; color: #fff; z-index: 1000; overflow-y: auto; }
+    .sidebar .brand { padding: 20px 15px; font-size: 1.2rem; font-weight: bold; background-color: #142334; border-bottom: 1px solid #283d56; }
+    .sidebar .nav-link { color: #b8c7ce; padding: 11px 18px; border-left: 4px solid transparent; font-size: 0.9rem; }
+    .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: #243952; border-left-color: #00a65a; }
     .sidebar .nav-link i { width: 25px; }
-    .main-content { margin-left: 250px; padding: 20px; min-height: 100vh; }
-    .card { border: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    .table-responsive { background-color: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    #scanner-container { width: 100%; max-width: 500px; margin: 0 auto; display: none; position: relative; background: #000; }
+    .main-content { margin-left: 260px; padding: 20px; min-height: 100vh; }
+    .card-metric { border: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); color: #fff; }
+    #scanner-container { width: 100%; max-width: 500px; margin: 0 auto; display: none; background: #000; }
     #video-preview { width: 100%; height: auto; border-radius: 8px; }
     @media (max-width: 768px) {
-      .sidebar { margin-left: -250px; }
+      .sidebar { margin-left: -260px; transition: all 0.3s; }
       .sidebar.active { margin-left: 0; }
       .main-content { margin-left: 0; }
     }
@@ -28,62 +30,52 @@
 </head>
 <body>
 
-  <!-- Sidebar Menu -->
+  <!-- Sidebar Menu Utama -->
   <div class="sidebar" id="sidebar">
-    <div class="brand"><i class="fas fa-store me-2"></i> LTM Mart</div>
-    <ul class="nav flex-column mt-2">
-      <li class="nav-item"><a class="nav-link active" href="#" onclick="switchMenu('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('kasir')"><i class="fas fa-shopping-cart"></i> Kasir Penjualan</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('riwayat')"><i class="fas fa-file-invoice"></i> Riwayat Nota</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('piutang')"><i class="fas fa-user-tag"></i> Piutang / Potong Gaji</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('stok')"><i class="fas fa-boxes"></i> Stok Barang</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('barang-masuk')"><i class="fas fa-truck-loading"></i> Barang Masuk</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('master')"><i class="fas fa-tag"></i> Master Barang</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('stok-opname')"><i class="fas fa-clipboard-check"></i> Stok Opname</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('konsinyasi')"><i class="fas fa-handshake"></i> Konsinyasi</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('hutang')"><i class="fas fa-credit-card"></i> Hutang</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('pemasukan')"><i class="fas fa-coins"></i> Pemasukan Luar</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('operasional')"><i class="fas fa-lightbulb"></i> Biaya Operasional</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('gaji')"><i class="fas fa-users-cog"></i> Pembayaran Gaji</a></li>
+    <div class="brand"><i class="fas fa-store me-2"></i> 🏬 LTM Mart</div>
+    <ul class="nav flex-column mt-1">
+      <li class="nav-item"><a class="nav-link active" href="#" onclick="switchMenu('dashboard')"><i class="fas fa-chart-line"></i> Dashboard Keuangan</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('kasir')"><i class="fas fa-cash-register"></i> Kasir Penjualan</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('jasa-keuangan')"><i class="fas fa-hand-holding-usd"></i> Tarik Tunai & Jasa CV</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('potong-gaji')"><i class="fas fa-users-slash"></i> Tagihan Potong Gaji (HRD)</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('konsinyasi')"><i class="fas fa-handshake"></i> Laporan Konsinyasi</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('stok-opname')"><i class="fas fa-clipboard-check"></i> Stok Opname & Deviasi</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('pelunasan')"><i class="fas fa-file-invoice-dollar"></i> Pelunasan BNI Direct</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('master')"><i class="fas fa-boxes"></i> Master Barang & Harga</a></li>
     </ul>
   </div>
 
   <!-- Main Content -->
   <div class="main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
       <button class="btn btn-primary d-md-none" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-      <h4 id="page-title" class="m-0">Dashboard</h4>
-      <div><span class="badge bg-secondary p-2"><i class="fas fa-user me-1"></i> Suwarsono (Owner)</span></div>
+      <h4 id="page-title" class="m-0">Dashboard Keuangan</h4>
+      <span class="badge bg-secondary p-2"><i class="fas fa-user-circle me-1"></i> Suwarsono (Owner)</span>
     </div>
 
-    <!-- Scanner Barcode Modal Container -->
+    <!-- Scanner Barcode Modal -->
     <div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title"><i class="fas fa-camera me-2"></i>Pindai Barcode</h5>
+            <h5 class="modal-title"><i class="fas fa-camera me-2"></i>Scan Barcode Kamera HP</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopCamera()"></button>
           </div>
           <div class="modal-body text-center">
             <div id="scanner-container">
               <video id="video-preview" autoplay playsinline></video>
             </div>
-            <p class="text-muted mt-2 small">Arahkan kamera ke kode barcode barang</p>
+            <p class="text-muted mt-2 small">Arahkan kamera HP ke kode barcode produk</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Container Area Konten Dinamis -->
+    <!-- Dynamic Content Area -->
     <div id="content-area"></div>
   </div>
 
-  <!-- JS Dependencies -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Konfigurasi URL Google Apps Script Backend Anda
-    const SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"; 
-
     let activeScanCallback = null;
     let videoStream = null;
 
@@ -92,133 +84,240 @@
     }
 
     function switchMenu(menu) {
-      const titles = {
-        'dashboard': 'Dashboard',
-        'kasir': 'Kasir Penjualan',
-        'riwayat': 'Riwayat Nota',
-        'piutang': 'Piutang / Potong Gaji',
-        'stok': 'Stok Barang',
-        'barang-masuk': 'Barang Masuk',
-        'master': 'Master Barang',
-        'stok-opname': 'Stok Opname',
-        'konsinyasi': 'Konsinyasi',
-        'hutang': 'Hutang',
-        'pemasukan': 'Pemasukan Luar',
-        'operasional': 'Biaya Operasional',
-        'gaji': 'Pembayaran Gaji'
-      };
-
-      document.getElementById('page-title').innerText = titles[menu] || 'LTM Mart';
       document.querySelectorAll('.sidebar .nav-link').forEach(el => el.classList.remove('active'));
-      event?.target?.classList?.add('active');
-
+      if(event && event.currentTarget) event.currentTarget.classList.add('active');
       renderContent(menu);
     }
 
     function renderContent(menu) {
       const container = document.getElementById('content-area');
-      
+
       switch(menu) {
         case 'dashboard':
+          document.getElementById('page-title').innerText = "Dashboard Keuangan";
           container.innerHTML = `
-            <div class="row">
-              <div class="col-md-4"><div class="card p-3 bg-primary text-white"><h5>Penjualan Hari Ini</h5><h3>Rp 0</h3></div></div>
-              <div class="col-md-4"><div class="card p-3 bg-success text-white"><h5>Total Transaksi</h5><h3>0</h3></div></div>
-              <div class="col-md-4"><div class="card p-3 bg-warning text-dark"><h5>Stok Menipis</h5><h3>0 Barang</h3></div></div>
-            </div>`;
+            <!-- Pos-pos Keuangan & Ringkasan Laba -->
+            <div class="row g-3 mb-4">
+              <div class="col-md-3">
+                <div class="card card-metric bg-success p-3">
+                  <small>Laba Bersih Bulan Ini</small>
+                  <h3 class="m-0">Rp 12.450.000</h3>
+                  <small class="text-white-50">(Laba Kotor - Gaji - Operasional)</small>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card card-metric bg-warning text-dark p-3">
+                  <small>Piutang Kopkar (Belum Dibayar)</small>
+                  <h3 class="m-0">Rp 8.750.000</h3>
+                  <small class="text-muted">Terakumulasi Potong Gaji</small>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card card-metric bg-danger p-3">
+                  <small>Hutang Kopkar / Overpay BNI</small>
+                  <h3 class="m-0">Rp 1.200.000</h3>
+                  <small class="text-white-50">Kelebihan Bayar BNI Direct</small>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card card-metric bg-info text-dark p-3">
+                  <small>Total Aset Barang Konsinyasi</small>
+                  <h3 class="m-0">Rp 15.300.000</h3>
+                  <small class="text-muted">Nilai HPP Ter-update</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grafik Trend Penjualan & Profit -->
+            <div class="card p-3 mb-4">
+              <h5><i class="fas fa-chart-line me-2"></i>Trend Penjualan & Pergerakan Profit Bulanan</h5>
+              <canvas id="profitChart" style="max-height: 280px;"></canvas>
+            </div>
+          `;
+          initChart();
           break;
 
         case 'kasir':
+          document.getElementById('page-title').innerText = "Kasir Penjualan";
           container.innerHTML = `
             <div class="card p-3">
               <div class="row g-2 mb-3">
                 <div class="col-8 col-md-10">
-                  <input type="text" id="barcode-input" class="form-control" placeholder="Scan Barcode / Ketik Nama Barang...">
+                  <input type="text" id="barcode-input" class="form-control form-control-lg" placeholder="Scan Barcode / Ketik Kode...">
                 </div>
                 <div class="col-4 col-md-2">
-                  <button class="btn btn-outline-primary w-100" onclick="startCamera(val => setBarcodeValue(val))"><i class="fas fa-camera"></i> Scan</button>
+                  <button class="btn btn-primary btn-lg w-100" onclick="startCamera(val => setBarcode(val))"><i class="fas fa-camera me-1"></i> Scan</button>
                 </div>
               </div>
+
+              <!-- Pilihan Jenis Barang & Metode Bayar -->
+              <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Jenis Kepemilikan Barang:</label>
+                  <select class="form-select" id="jenis-barang">
+                    <option value="langsung">Beli Langsung (Milik LTM Mart)</option>
+                    <option value="konsinyasi">Barang Konsinyasi (Titipan Supplier)</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Kategori Pembayaran:</label>
+                  <select class="form-select" id="metode-bayar" onchange="checkMetodeBayar(this.value)">
+                    <option value="tunai">Tunai</option>
+                    <option value="qris">QRIS / Transfer BNI (SWR / Direct)</option>
+                    <option value="potong-gaji">Potong Gaji Bulanan (Kopkar)</option>
+                    <option value="tempo">Penjualan Tempo</option>
+                  </select>
+                </div>
+                <div class="col-md-4" id="potong-gaji-info" style="display:none;">
+                  <label class="form-label fw-bold">Jadwal Tagihan Gaji:</label>
+                  <input type="text" class="form-control bg-light" value="Masuk Tagihan 1 Feb 2027" readonly>
+                </div>
+              </div>
+
               <div class="table-responsive">
                 <table class="table align-middle">
-                  <thead><tr><th>Barang</th><th>Harga</th><th>Qty</th><th>Total</th><th>Aksi</th></tr></thead>
-                  <tbody id="cart-list"><tr><td colspan="5" class="text-center text-muted">Keranjang kosong</td></tr></tbody>
+                  <thead><tr><th>Produk</th><th>Jenis</th><th>Harga</th><th>Qty</th><th>Total</th></tr></thead>
+                  <tbody>
+                    <tr><td>Minyak Goreng 2L</td><td><span class="badge bg-secondary">Milik Toko</span></td><td>Rp 34.000</td><td>1</td><td>Rp 34.000</td></tr>
+                    <tr><td>Kue Usaha Lokal</td><td><span class="badge bg-info text-dark">Konsinyasi</span></td><td>Rp 12.000</td><td>2</td><td>Rp 24.000</td></tr>
+                  </tbody>
                 </table>
               </div>
-              <div class="d-flex justify-content-between align-middle mt-3">
-                <h4>Total: <span id="cart-total">Rp 0</span></h4>
-                <button class="btn btn-success btn-lg"><i class="fas fa-cash-register me-2"></i> Bayar</button>
+              <div class="d-flex justify-content-between align-items-center mt-3">
+                <h4>Total Transaksi: <span class="text-success fw-bold">Rp 58.000</span></h4>
+                <button class="btn btn-success btn-lg"><i class="fas fa-check-circle me-1"></i> Selesaikan Transaksi</button>
               </div>
             </div>`;
           break;
 
-        case 'riwayat':
+        case 'jasa-keuangan':
+          document.getElementById('page-title').innerText = "Tarik Tunai & Jasa Penggajian CV";
           container.innerHTML = `
             <div class="card p-3">
-              <h5><i class="fas fa-history me-2"></i>Riwayat Transaksi Nota</h5>
-              <div class="table-responsive mt-2">
-                <table class="table table-hover">
-                  <thead><tr><th>No. Nota</th><th>Tanggal</th><th>Kasir</th><th>Total</th><th>Metode</th></tr></thead>
-                  <tbody><tr><td colspan="5" class="text-center text-muted">Belum ada data riwayat</td></tr></tbody>
-                </table>
+              <h5><i class="fas fa-hand-holding-usd me-2"></i>Layanan Tambahan Non-Retail</h5>
+              <ul class="nav nav-tabs mt-2" id="jasaTab">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tarik-tunai">Tarik Tunai</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#gaji-cv">Jasa Penggajian CV</a></li>
+              </ul>
+              <div class="tab-content pt-3">
+                <div class="tab-pane fade show active" id="tarik-tunai">
+                  <div class="row g-2">
+                    <div class="col-md-4"><input type="number" class="form-control" placeholder="Nominal Tarik Tunai (Rp)"></div>
+                    <div class="col-md-4"><input type="number" class="form-control" placeholder="Admin Fee / Pemasukan (Rp)"></div>
+                    <div class="col-md-4"><button class="btn btn-primary w-100">Proses Tarik Tunai</button></div>
+                  </div>
+                </div>
+                <div class="tab-pane fade" id="gaji-cv">
+                  <div class="row g-2">
+                    <div class="col-md-4"><input type="text" class="form-control" placeholder="Nama CV / Instansi"></div>
+                    <div class="col-md-4"><input type="number" class="form-control" placeholder="Total Dana Payroll"></div>
+                    <div class="col-md-4"><input type="number" class="form-control" placeholder="Fee Jasa LTM Mart (Rp)"></div>
+                  </div>
+                  <button class="btn btn-success mt-2">Catat Pemasukan Jasa</button>
+                </div>
               </div>
             </div>`;
           break;
 
-        case 'master':
+        case 'potong-gaji':
+          document.getElementById('page-title').innerText = "Tagihan Potong Gaji HRD";
           container.innerHTML = `
             <div class="card p-3">
               <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5><i class="fas fa-boxes me-2"></i>Master Data Barang</h5>
-                <button class="btn btn-primary" onclick="alert('Fitur Tambah Barang')"><i class="fas fa-plus me-1"></i> Tambah Barang</button>
+                <div>
+                  <h5 class="m-0">Daftar Tagihan Potong Gaji Bulanan</h5>
+                  <small class="text-muted">Periode Cut-Off: 16 Des 2026 - 15 Jan 2027 (Jatuh Tempo: 1 Feb 2027)</small>
+                </div>
+                <button class="btn btn-success" onclick="exportToExcel('table-hrd', 'Tagihan_Potong_Gaji_HRD.xlsx')"><i class="fas fa-file-excel me-1"></i> Export .XLSX untuk HRD</button>
               </div>
               <div class="table-responsive">
-                <table class="table table-striped">
-                  <thead><tr><th>Kode Barcode</th><th>Nama Barang</th><th>Harga Beli</th><th>Harga Jual</th><th>Stok</th></tr></thead>
-                  <tbody><tr><td colspan="5" class="text-center text-muted">Memuat data master barang...</td></tr></tbody>
+                <table class="table table-bordered" id="table-hrd">
+                  <thead class="table-dark"><tr><th>No Reg</th><th>Nama Karyawan</th><th>Total Akumulasi Tagihan</th><th>Status Pay</th></tr></thead>
+                  <tbody>
+                    <tr><td>REG-001</td><td>Ahmad Nur</td><td>Rp 450.000</td><td><span class="badge bg-warning text-dark">Unpaid</span></td></tr>
+                    <tr><td>REG-002</td><td>Budi Santoso</td><td>Rp 320.000</td><td><span class="badge bg-warning text-dark">Unpaid</span></td></tr>
+                  </tbody>
                 </table>
               </div>
             </div>`;
           break;
 
-        case 'barang-masuk':
+        case 'konsinyasi':
+          document.getElementById('page-title').innerText = "Laporan Barang Konsinyasi";
           container.innerHTML = `
             <div class="card p-3">
-              <h5><i class="fas fa-truck-loading me-2"></i>Input Barang Masuk / Kulakan</h5>
-              <div class="row g-2 mt-2">
-                <div class="col-md-8"><input type="text" id="masuk-barcode" class="form-control" placeholder="Barcode Barang"></div>
-                <div class="col-md-4"><button class="btn btn-outline-primary w-100" onclick="startCamera(val => document.getElementById('masuk-barcode').value = val)"><i class="fas fa-camera me-1"></i> Scan Barcode</button></div>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5><i class="fas fa-handshake me-2"></i>Rekap Pembayaran HPP Supplier Titipan</h5>
+                <button class="btn btn-success" onclick="exportToExcel('table-konsinyasi', 'Rekap_HPP_Konsinyasi.xlsx')"><i class="fas fa-file-excel me-1"></i> Export .XLSX Supplier</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-striped" id="table-konsinyasi">
+                  <thead><tr><th>Nama Supplier</th><th>Nama Barang</th><th>Qty Terjual</th><th>HPP per Unit</th><th>Total Nominal Wajib Bayar</th></tr></thead>
+                  <tbody>
+                    <tr><td>Supplier Snack Bu Siti</td><td>Keripik Tempe</td><td>25 Pcs</td><td>Rp 8.000</td><td>Rp 200.000</td></tr>
+                  </tbody>
+                </table>
               </div>
             </div>`;
           break;
 
         case 'stok-opname':
+          document.getElementById('page-title').innerText = "Stok Opname & Perhitungan Deviasi";
           container.innerHTML = `
             <div class="card p-3">
-              <h5><i class="fas fa-clipboard-check me-2"></i>Stok Opname</h5>
-              <div class="row g-2 mt-2">
-                <div class="col-md-8"><input type="text" id="opname-barcode" class="form-control" placeholder="Scan/Ketik Barcode"></div>
-                <div class="col-md-4"><button class="btn btn-outline-primary w-100" onclick="startCamera(val => document.getElementById('opname-barcode').value = val)"><i class="fas fa-camera me-1"></i> Scan</button></div>
+              <div class="row g-2 mb-3">
+                <div class="col-8 col-md-10"><input type="text" id="opname-input" class="form-control" placeholder="Scan Barcode Barang..."></div>
+                <div class="col-4 col-md-2"><button class="btn btn-primary w-100" onclick="startCamera(val => setOpname(val))"><i class="fas fa-camera"></i> Scan</button></div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                  <thead class="table-secondary"><tr><th>Kode Barcode</th><th>Nama Barang</th><th>Stok Sistem</th><th>Hitung Manual</th><th>Deviasi (Selisih)</th></tr></thead>
+                  <tbody>
+                    <tr><td>8992761001</td><td>Minyak Goreng 2L</td><td>50</td><td><input type="number" class="form-control form-control-sm" value="48"></td><td class="text-danger fw-bold">-2 (Rugi Rp 68.000)</td></tr>
+                  </tbody>
+                </table>
               </div>
             </div>`;
           break;
 
         default:
-          container.innerHTML = `
-            <div class="card p-4 text-center">
-              <h5><i class="fas fa-folder-open me-2"></i>Menu ${titles[menu] || menu}</h5>
-              <p class="text-muted m-0">Fitur sedang aktif dan siap menerima integrasi data dari Google Spreadsheet.</p>
-            </div>`;
+          container.innerHTML = `<div class="card p-4 text-center"><h5>Modul ${menu} Aktif</h5></div>`;
           break;
       }
     }
 
-    function setBarcodeValue(val) {
-      const el = document.getElementById('barcode-input');
-      if (el) el.value = val;
+    function checkMetodeBayar(val) {
+      document.getElementById('potong-gaji-info').style.display = (val === 'potong-gaji') ? 'block' : 'none';
     }
 
-    // Fungsi Pengoperasian Kamera HP & Scan Barcode
+    function setBarcode(val) { document.getElementById('barcode-input').value = val; }
+    function setOpname(val) { document.getElementById('opname-input').value = val; }
+
+    // Fungsi Grafik Profit & Trend Penjualan
+    function initChart() {
+      const ctx = document.getElementById('profitChart');
+      if(!ctx) return;
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Agt', 'Sep', 'Okt', 'Nov', 'Des', 'Jan'],
+          datasets: [
+            { label: 'Penjualan Kotor (Rp)', data: [45000000, 52000000, 48000000, 58000000, 62000000, 68000000], borderColor: '#3b82f6', fill: false },
+            { label: 'Laba Bersih (Rp)', data: [8000000, 9500000, 8800000, 10200000, 11000000, 12450000], borderColor: '#10b981', fill: false }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    // Export Tabe ke File Excel (.XLSX)
+    function exportToExcel(tableID, filename) {
+      const table = document.getElementById(tableID);
+      const wb = XLSX.utils.table_to_book(table, {sheet: "Laporan"});
+      XLSX.writeFile(wb, filename);
+    }
+
+    // Kamera Barcode
     async function startCamera(callback) {
       activeScanCallback = callback;
       const modal = new bootstrap.Modal(document.getElementById('scannerModal'));
@@ -226,24 +325,20 @@
       document.getElementById('scanner-container').style.display = 'block';
 
       try {
-        videoStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: "environment" } }
-        }).catch(() => {
-          return navigator.mediaDevices.getUserMedia({ video: true });
-        });
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } })
+          .catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
 
         const video = document.getElementById('video-preview');
         video.srcObject = videoStream;
 
         if ('BarcodeDetector' in window) {
-          const barcodeDetector = new BarcodeDetector();
+          const detector = new BarcodeDetector();
           const detect = async () => {
             if (!videoStream) return;
             try {
-              const barcodes = await barcodeDetector.detect(video);
+              const barcodes = await detector.detect(video);
               if (barcodes.length > 0) {
-                const code = barcodes[0].rawValue;
-                if (activeScanCallback) activeScanCallback(code);
+                activeScanCallback(barcodes[0].rawValue);
                 stopCamera();
                 modal.hide();
                 return;
@@ -253,10 +348,10 @@
           };
           detect();
         } else {
-          alert("Browser tidak mendukung BarcodeDetector. Silakan ketik barcode secara manual.");
+          alert("Gunakan browser Chrome / Edge HP untuk fitur scan otomatis ini.");
         }
       } catch (err) {
-        alert("Gagal mengakses kamera: " + err.message);
+        alert("Akses kamera gagal: " + err.message);
       }
     }
 
@@ -268,7 +363,6 @@
       document.getElementById('scanner-container').style.display = 'none';
     }
 
-    // Muat menu pertama saat aplikasi dibuka
     window.onload = () => switchMenu('dashboard');
   </script>
 </body>
