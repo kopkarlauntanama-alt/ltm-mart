@@ -159,7 +159,7 @@
       'operasional': 'Biaya Operasional Toko',
       'gaji': 'Pembayaran Gaji Pegawai & Potong Gaji HRD',
       'mutasi': 'Mutasi Rekening & Pelunasan BNI Direct (Overpay)',
-      'saldo-awal': 'Saldo Awal Akuntansi',
+      'saldo-awal': 'Saldo Awal Akuntansi Terperinci',
       'cetak-barcode': 'Cetak Barcode Produk'
     };
 
@@ -257,6 +257,61 @@
                   <small>Aset Barang Konsinyasi</small>
                   <h3 class="m-0">Rp 15.300.000</h3>
                   <small class="text-muted">Total HPP Konsinyasi Ter-update</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Posisi Keuangan Per Pos Rekening / Metode Pembayaran -->
+            <div class="card p-3 mb-4">
+              <h5 class="mb-3"><i class="fas fa-wallet me-2 text-primary"></i>Posisi Saldo Keuangan Per Pos Rekening</h5>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <div class="p-3 border rounded bg-light">
+                    <small class="text-muted">Tunai (Kas Laci)</small>
+                    <h5 class="fw-bold m-0 text-dark">Rp 3.500.000</h5>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="p-3 border rounded bg-light">
+                    <small class="text-muted">BNI Direct / Transfer BNI</small>
+                    <h5 class="fw-bold m-0 text-primary">Rp 14.200.000</h5>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="p-3 border rounded bg-light">
+                    <small class="text-muted">QRIS BNI</small>
+                    <h5 class="fw-bold m-0 text-success">Rp 2.850.000</h5>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="p-3 border rounded bg-light">
+                    <small class="text-muted">wondr by BNI</small>
+                    <h5 class="fw-bold m-0 text-info">Rp 4.100.000</h5>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="p-3 border rounded bg-light">
+                    <small class="text-muted">myBCA</small>
+                    <h5 class="fw-bold m-0 text-primary">Rp 6.300.000</h5>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="p-3 border rounded bg-light">
+                    <small class="text-muted">Livin' by Mandiri</small>
+                    <h5 class="fw-bold m-0 text-warning text-dark">Rp 5.200.000</h5>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="p-3 border rounded bg-light">
+                    <small class="text-muted">Flip</small>
+                    <h5 class="fw-bold m-0 text-secondary">Rp 1.500.000</h5>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="p-3 border rounded bg-light">
+                    <small class="text-muted">Kas Kopkar</small>
+                    <h5 class="fw-bold m-0 text-danger">Rp 9.800.000</h5>
+                  </div>
                 </div>
               </div>
             </div>
@@ -526,12 +581,42 @@
         case 'saldo-awal':
           container.innerHTML = `
             <div class="card p-3">
-              <h5><i class="fas fa-wallet me-2"></i>Pengaturan Saldo Awal Akuntansi</h5>
-              <div class="row g-2 mt-2">
-                <div class="col-md-6"><input type="number" class="form-control" placeholder="Saldo Kas Tunai di Laci (Rp)"></div>
-                <div class="col-md-6"><input type="number" class="form-control" placeholder="Saldo Rekening Bank (Rp)"></div>
+              <h5><i class="fas fa-wallet me-2"></i>Pengaturan Saldo Awal Akuntansi Terperinci Per Pos Rekening</h5>
+              <div class="row g-3 mt-2">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Tunai (Kas Laci):</label>
+                  <input type="number" class="form-control" placeholder="0" value="3500000">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">BNI Direct / Transfer BNI:</label>
+                  <input type="number" class="form-control" placeholder="0" value="14200000">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">QRIS BNI:</label>
+                  <input type="number" class="form-control" placeholder="0" value="2850000">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">wondr by BNI:</label>
+                  <input type="number" class="form-control" placeholder="0" value="4100000">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">myBCA:</label>
+                  <input type="number" class="form-control" placeholder="0" value="6300000">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Livin' by Mandiri:</label>
+                  <input type="number" class="form-control" placeholder="0" value="5200000">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Flip:</label>
+                  <input type="number" class="form-control" placeholder="0" value="1500000">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Kas Kopkar:</label>
+                  <input type="number" class="form-control" placeholder="0" value="9800000">
+                </div>
               </div>
-              <button class="btn btn-primary mt-3" onclick="executeWithProtection('Saldo Awal', () => alert('Saldo Awal Berhasil Diperbarui!'))">Simpan Saldo Awal</button>
+              <button class="btn btn-primary mt-4 w-100 py-2" onclick="executeWithProtection('Saldo Awal', () => alert('Saldo Awal Terperinci Berhasil Diperbarui!'))"><i class="fas fa-save me-1"></i> Simpan Saldo Awal Terperinci</button>
             </div>`;
           break;
 
