@@ -150,11 +150,11 @@
 
     const titles = {
       'dashboard': 'Dashboard Keuangan',
-      'kasir': 'Kasir Penjualan (Multi-Satuan & Validasi Diskon Laba)',
+      'kasir': 'Kasir Penjualan (FIFO Stok Lama & Multi-Satuan)',
       'riwayat': 'Riwayat Nota Transaksi',
       'stok': 'Stok Barang & Opname Deviasi',
       'barang-masuk': 'Barang Masuk / Kulakan Baru',
-      'master': 'Master Barang & Harga (Batas Laba Minimal & Harga Member)',
+      'master': 'Master Barang & Harga',
       'konsinyasi': 'Laporan Barang Konsinyasi (Export .XLSX Supplier)',
       'bayar-konsinyasi': 'Pembayaran Tagihan Konsinyasi',
       'pemasukan': 'Pemasukan Luar / Tarik Tunai & Fee CV',
@@ -265,7 +265,7 @@
               <div class="row g-2 mb-3">
                 <div class="col-md-4">
                   <label class="form-label fw-bold">Tipe Pembeli:</label>
-                  <select class="form-select border-primary" id="tipe-pembeli">
+                  <select class="form-select border-primary" id="tipe-pembeli" onchange="hitungTotalBelanja()">
                     <option value="reguler">Pembeli Reguler (Harga Reguler)</option>
                     <option value="member">Pembeli Member (Harga Khusus Member)</option>
                   </select>
@@ -286,12 +286,23 @@
                 </div>
               </div>
 
+              <!-- Input Barcode ATAU Pilih Nama Produk (FIFO Prioritas Stok Lama) -->
               <div class="row g-2 mb-3">
-                <div class="col-8 col-md-10">
-                  <input type="text" id="barcode-input" class="form-control form-control-lg" placeholder="Scan Barcode / Ketik Kode Produk...">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Scan Barcode / Kode Produk:</label>
+                  <div class="input-group">
+                    <input type="text" id="barcode-input" class="form-control" placeholder="Scan Barcode...">
+                    <button class="btn btn-primary" onclick="startCamera(val => setBarcode(val))"><i class="fas fa-camera"></i> Scan</button>
+                  </div>
                 </div>
-                <div class="col-4 col-md-2">
-                  <button class="btn btn-primary btn-lg w-100" onclick="startCamera(val => setBarcode(val))"><i class="fas fa-camera me-1"></i> Scan</button>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Atau Pilih Nama Produk (Stok > 0, Prioritas Stok Lama):</label>
+                  <select class="form-select border-success" id="pilih-nama-produk" onchange="tambahProdukDariDropdown(this.value)">
+                    <option value="">-- Pilih Nama Produk --</option>
+                    <option value="minyak-lama">Minyak Goreng 2L - Stok Lama (Stok: 50 | Prioritas 1)</option>
+                    <option value="minyak-baru">Minyak Goreng 2L - Stok Baru (Stok: 30 | Prioritas 2)</option>
+                    <option value="tempe-siti">Keripik Tempe Bu Siti (Stok: 25)</option>
+                  </select>
                 </div>
               </div>
 
@@ -299,31 +310,29 @@
                 <table class="table align-middle">
                   <thead>
                     <tr>
-                      <th>Produk (FIFO Batch)</th>
+                      <th>Produk & Status Stok</th>
                       <th>Satuan Pembelian</th>
-                      <th>Harga Satuan</th>
                       <th>Qty</th>
                       <th>Potongan Harga (Rp)</th>
-                      <th>Subtotal</th>
+                      <th>Subtotal (Rp)</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody id="cart-tbody">
                     <tr>
                       <td>
                         Minyak Goreng 2L<br>
                         <span class="badge bg-secondary">Stok Lama</span>
                       </td>
                       <td>
-                        <select class="form-select form-select-sm">
-                          <option value="eceran">Eceran / Pcs (Rp 34.000)</option>
-                          <option value="dus">Dus (Rp 400.000)</option>
-                          <option value="kodi">Kodi (Rp 650.000)</option>
+                        <select class="form-select form-select-sm satuan-select" onchange="hitungTotalBelanja()">
+                          <option value="34000" data-dus="400000" data-kodi="650000">Eceran / Pcs (Rp 34.000)</option>
+                          <option value="400000">Dus (Rp 400.000)</option>
+                          <option value="650000">Kodi (Rp 650.000)</option>
                         </select>
                       </td>
-                      <td>Rp 34.000</td>
-                      <td><input type="number" class="form-control form-control-sm" value="1" style="width: 70px;"></td>
-                      <td><input type="number" class="form-control form-control-sm" value="0" placeholder="0" oninput="validasiDiskonLaba(this, 3000)"></td>
-                      <td class="fw-bold text-success">Rp 34.000</td>
+                      <td><input type="number" class="form-control form-control-sm qty-input" value="1" style="width: 70px;" oninput="hitungTotalBelanja()"></td>
+                      <td><input type="number" class="form-control form-control-sm diskon-input" value="0" placeholder="0" oninput="validasiDiskonLaba(this, 3000); hitungTotalBelanja();"></td>
+                      <td class="fw-bold text-success subtotal-text">Rp 34.000</td>
                     </tr>
                   </tbody>
                 </table>
@@ -334,8 +343,8 @@
               </div>
 
               <div class="d-flex justify-content-between align-items-center mt-3">
-                <h4>Total Bayar: <span class="text-success fw-bold">Rp 34.000</span></h4>
-                <button class="btn btn-success btn-lg" onclick="executeWithProtection('Transaksi Penjualan', () => alert('Transaksi Berhasil! Stok batch lama otomatis dihabiskan.'))"><i class="fas fa-check-circle me-1"></i> Selesaikan Transaksi</button>
+                <h4>Total Bayar: <span class="text-success fw-bold" id="grand-total">Rp 34.000</span></h4>
+                <button class="btn btn-success btn-lg" onclick="executeWithProtection('Transaksi Penjualan', () => alert('Transaksi Berhasil! Stok batch lama otomatis dihabiskan dahulu.'))"><i class="fas fa-check-circle me-1"></i> Selesaikan Transaksi</button>
               </div>
             </div>`;
           break;
@@ -461,7 +470,7 @@
                       <td>8992761001</td>
                       <td>Minyak Goreng 2L <br><small class="text-secondary">Stok Lama</small></td>
                       <td>Rp 30.000</td>
-                      <td><input type="number" class="form-control form-control-sm" value="3000" style="width: 110px;" title="Batas minimal laba harus dicapai"></td>
+                      <td><input type="number" class="form-control form-control-sm" value="3000" style="width: 110px;"></td>
                       <td>
                         <div class="input-group input-group-sm mb-1"><span class="input-group-text">Ecer</span><input type="text" class="form-control" value="34.000"></div>
                         <div class="input-group input-group-sm mb-1"><span class="input-group-text">Dus</span><input type="text" class="form-control" value="400.000"></div>
@@ -506,19 +515,12 @@
           container.innerHTML = `
             <div class="card p-3">
               <h5><i class="fas fa-file-invoice-dollar me-2"></i>Pembayaran Tagihan Barang Konsinyasi ke Supplier</h5>
-              <p class="text-muted small">Pelunasan HPP barang konsinyasi menggunakan satu pos rekening tunggal. Jika kurang, lakukan transfer via <em>Mutasi Rekening</em>.</p>
               <div class="row g-3 mt-1">
                 <div class="col-md-6"><label class="form-label fw-bold">Pilih Supplier & Tagihan:</label><select class="form-select"><option>Supplier Snack Bu Siti (Rp 200.000)</option></select></div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Pilih Pos Rekening Pembayaran:</label>
                   <select class="form-select border-success">
-                    <option value="tunai">Tunai (Kas Laci)</option>
-                    <option value="bni-direct">BNI Direct</option>
-                    <option value="qris-bni">QRIS BNI</option>
-                    <option value="wondr-bni">wondr by BNI</option>
-                    <option value="mybca">myBCA</option>
-                    <option value="livin-mandiri">Livin' by Mandiri</option>
-                    <option value="flip">Flip</option>
+                    <option value="tunai">Tunai (Kas Laci)</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS BNI</option><option value="wondr-bni">wondr by BNI</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin' by Mandiri</option><option value="flip">Flip</option>
                   </select>
                 </div>
                 <div class="col-md-6"><label class="form-label fw-bold">Nominal Pembayaran (Rp):</label><input type="number" class="form-control" value="200000"></div>
@@ -535,9 +537,7 @@
                 <div class="col-md-3"><label class="form-label fw-bold">Keterangan:</label><input type="text" class="form-control" placeholder="Fee Payroll"></div>
                 <div class="col-md-3">
                   <label class="form-label fw-bold">Rekening Tujuan:</label>
-                  <select class="form-select">
-                    <option value="tunai">Tunai</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS BNI</option><option value="wondr-bni">wondr by BNI</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin' Mandiri</option><option value="flip">Flip</option><option value="kas-kopkar">Kas Kopkar</option>
-                  </select>
+                  <select class="form-select"><option value="tunai">Tunai</option><option value="bni-direct">BNI Direct</option><option value="qris-bni">QRIS BNI</option><option value="wondr-bni">wondr by BNI</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin' Mandiri</option><option value="flip">Flip</option><option value="kas-kopkar">Kas Kopkar</option></select>
                 </div>
                 <div class="col-md-3"><label class="form-label fw-bold">Nominal (Rp):</label><input type="number" class="form-control" placeholder="0"></div>
                 <div class="col-md-3 d-flex align-items-end"><button class="btn btn-success w-100" onclick="executeWithProtection('Pemasukan', () => alert('Pemasukan Disimpan!'))"><i class="fas fa-save me-1"></i> Simpan</button></div>
@@ -553,9 +553,7 @@
                 <div class="col-md-3"><label class="form-label fw-bold">Jenis Biaya:</label><input type="text" class="form-control" placeholder="PLN / PDAM"></div>
                 <div class="col-md-3">
                   <label class="form-label fw-bold">Sumber Rekening:</label>
-                  <select class="form-select">
-                    <option value="tunai">Tunai</option><option value="bni-direct">BNI Direct</option><option value="wondr-bni">wondr by BNI</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin' Mandiri</option><option value="flip">Flip</option>
-                  </select>
+                  <select class="form-select"><option value="tunai">Tunai</option><option value="bni-direct">BNI Direct</option><option value="wondr-bni">wondr by BNI</option><option value="mybca">myBCA</option><option value="livin-mandiri">Livin' Mandiri</option><option value="flip">Flip</option></select>
                 </div>
                 <div class="col-md-3"><label class="form-label fw-bold">Nominal (Rp):</label><input type="number" class="form-control" placeholder="0"></div>
                 <div class="col-md-3 d-flex align-items-end"><button class="btn btn-danger w-100" onclick="executeWithProtection('Ops', () => alert('Biaya Disimpan!'))"><i class="fas fa-save me-1"></i> Simpan</button></div>
@@ -636,11 +634,80 @@
       }
     }
 
+    function tambahProdukDariDropdown(val) {
+      if(!val) return;
+      const tbody = document.getElementById('cart-tbody');
+      if(!tbody) return;
+
+      let namaProduk = "";
+      let badgeHtml = "";
+      let eceran = 34000, dus = 400000, kodi = 650000;
+
+      if(val === 'minyak-lama') {
+        namaProduk = "Minyak Goreng 2L";
+        badgeHtml = '<span class="badge bg-secondary">Stok Lama (Prioritas 1)</span>';
+      } else if(val === 'minyak-baru') {
+        namaProduk = "Minyak Goreng 2L";
+        badgeHtml = '<span class="badge bg-warning text-dark">Stok Baru</span>';
+        eceran = 36000; dus = 420000; kodi = 680000;
+      } else if(val === 'tempe-siti') {
+        namaProduk = "Keripik Tempe Bu Siti";
+        badgeHtml = '<span class="badge bg-info text-dark">Konsinyasi</span>';
+        eceran = 10000; dus = 110000; kodi = 190000;
+      }
+
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td>${namaProduk}<br>${badgeHtml}</td>
+        <td>
+          <select class="form-select form-select-sm satuan-select" onchange="hitungTotalBelanja()">
+            <option value="${eceran}">Eceran / Pcs (Rp ${eceran.toLocaleString('id-ID')})</option>
+            <option value="${dus}">Dus (Rp ${dus.toLocaleString('id-ID')})</option>
+            <option value="${kodi}">Kodi (Rp ${kodi.toLocaleString('id-ID')})</option>
+          </select>
+        </td>
+        <td><input type="number" class="form-control form-control-sm qty-input" value="1" style="width: 70px;" oninput="hitungTotalBelanja()"></td>
+        <td><input type="number" class="form-control form-control-sm diskon-input" value="0" placeholder="0" oninput="validasiDiskonLaba(this, 3000); hitungTotalBelanja();"></td>
+        <td class="fw-bold text-success subtotal-text">Rp ${eceran.toLocaleString('id-ID')}</td>
+      `;
+      tbody.appendChild(newRow);
+      document.getElementById('pilih-nama-produk').value = "";
+      hitungTotalBelanja();
+    }
+
+    function hitungTotalBelanja() {
+      const rows = document.querySelectorAll('#cart-tbody tr');
+      let grandTotal = 0;
+
+      rows.forEach(row => {
+        const satuanSelect = row.querySelector('.satuan-select');
+        const qtyInput = row.querySelector('.qty-input');
+        const diskonInput = row.querySelector('.diskon-input');
+        const subtotalText = row.querySelector('.subtotal-text');
+
+        if(satuanSelect && qtyInput && diskonInput && subtotalText) {
+          const hargaSatuan = parseFloat(satuanSelect.value) || 0;
+          const qty = parseFloat(qtyInput.value) || 0;
+          const diskon = parseFloat(diskonInput.value) || 0;
+
+          // Rumus: Subtotal = (Harga Satuan × Qty) - Potongan Harga
+          let subtotal = (hargaSatuan * qty) - diskon;
+          if (subtotal < 0) subtotal = 0;
+
+          subtotalText.innerText = "Rp " + Math.round(subtotal).toLocaleString('id-ID');
+          grandTotal += subtotal;
+        }
+      });
+
+      const grandTotalEl = document.getElementById('grand-total');
+      if(grandTotalEl) {
+        grandTotalEl.innerText = "Rp " + Math.round(grandTotal).toLocaleString('id-ID');
+      }
+    }
+
     function validasiDiskonLaba(inputEl, minLaba) {
       const diskonVal = parseFloat(inputEl.value) || 0;
       const warningEl = document.getElementById('diskon-warning');
-      // Simulasi aturan laba: Misal margin kotor awal adalah Rp 4.000, batas minimal laba Rp 3.000, maka diskon maksimal yang diizinkan adalah Rp 1.000
-      // Jika diskon melebihi batas laba minimal, tampilkan notifikasi.
       if (diskonVal > 1000) {
         if(warningEl) warningEl.style.display = 'block';
         inputEl.classList.add('is-invalid');
@@ -648,33 +715,6 @@
         if(warningEl) warningEl.style.display = 'none';
         inputEl.classList.remove('is-invalid');
       }
-    }
-
-    function toggleRekeningBayar(val) {
-      const wrapper = document.getElementById('rekening-bayar-wrapper');
-      if(wrapper) wrapper.style.display = (val === 'beli-langsung') ? 'block' : 'none';
-    }
-
-    function togglePcsPerKemasan(val) {
-      const wrapper = document.getElementById('pcs-wrapper');
-      if(wrapper) wrapper.style.display = (val === 'dus' || val === 'kodi') ? 'block' : 'none';
-      hitungHppOtomatis();
-    }
-
-    function hitungHppOtomatis() {
-      const satuan = document.getElementById('satuan-terima')?.value;
-      const qtyMasuk = parseFloat(document.getElementById('qty-masuk')?.value) || 0;
-      const totalNominal = parseFloat(document.getElementById('total-nominal-kulakan')?.value) || 0;
-      const pcsPerKemasan = parseFloat(document.getElementById('qty-per-kemasan')?.value) || 1;
-
-      let totalPcs = qtyMasuk;
-      if (satuan === 'dus' || satuan === 'kodi') {
-        totalPcs = qtyMasuk * pcsPerKemasan;
-      }
-
-      let hppPcs = (totalPcs > 0 && totalNominal > 0) ? (totalNominal / totalPcs) : 0;
-      const textEl = document.getElementById('hpp-otomatis-text');
-      if (textEl) textEl.innerText = "Rp " + Math.round(hppPcs).toLocaleString('id-ID');
     }
 
     function checkMetodeBayar(val) {
