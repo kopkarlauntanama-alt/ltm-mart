@@ -45,7 +45,7 @@
     <small class="text-warning">Mohon tunggu, sinkronisasi otomatis berjalan.</small>
   </div>
 
-  <!-- Sidebar 13 Menu Lengkap Sesuai Sistem -->
+  <!-- Sidebar 13 Menu Lengkap -->
   <div class="sidebar" id="sidebar">
     <div class="brand"><i class="fas fa-store me-2"></i> 🏬 LTM Mart</div>
     <ul class="nav flex-column mt-1">
@@ -292,8 +292,13 @@
                 <div class="col-md-4">
                   <label class="form-label fw-bold">Kategori Pembayaran:</label>
                   <select class="form-select" id="metode-bayar" onchange="checkMetodeBayar(this.value)">
-                    <option value="tunai">Tunai</option>
-                    <option value="qris">QRIS / Transfer BNI (SWR & Direct)</option>
+                    <option value="tunai">Tunai (Kas Laci)</option>
+                    <option value="qris-bni">QRIS BNI</option>
+                    <option value="bni-direct">BNI Direct / Transfer BNI</option>
+                    <option value="wondr-bni">wondr by BNI</option>
+                    <option value="mybca">myBCA</option>
+                    <option value="livin-mandiri">Livin' by Mandiri</option>
+                    <option value="flip">Flip</option>
                     <option value="potong-gaji">Potong Gaji Bulanan (Cut-Off 16-15)</option>
                     <option value="tempo">Penjualan Tempo (Bebas Waktu)</option>
                   </select>
@@ -416,9 +421,30 @@
             <div class="card p-3">
               <h5><i class="fas fa-funnel-dollar me-2"></i>Pemasukan Luar (Tarik Tunai & Jasa Penggajian CV)</h5>
               <div class="row g-3 mt-1">
-                <div class="col-md-4"><input type="text" class="form-control" placeholder="Keterangan (ex: Fee Payroll CV Maju)"></div>
-                <div class="col-md-4"><input type="number" class="form-control" placeholder="Nominal Fee Pemasukan (Rp)"></div>
-                <div class="col-md-4"><button class="btn btn-success w-100" onclick="executeWithProtection('Pemasukan Non-Retail', () => alert('Fee Berhasil Masuk ke Kasir & Pemasukan Luar!'))">Simpan Pemasukan</button></div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold">Keterangan Pemasukan:</label>
+                  <input type="text" class="form-control" placeholder="ex: Fee Payroll CV Maju / Jasa Tarik Tunai">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold">Rekening / Pos Tujuan:</label>
+                  <select class="form-select" id="pemasukan-rekening">
+                    <option value="kas-tunai">Tunai (Kas Laci)</option>
+                    <option value="bni-direct">BNI Direct / Transfer BNI</option>
+                    <option value="qris-bni">QRIS BNI</option>
+                    <option value="wondr-bni">wondr by BNI</option>
+                    <option value="mybca">myBCA</option>
+                    <option value="livin-mandiri">Livin' by Mandiri</option>
+                    <option value="flip">Flip</option>
+                    <option value="kas-kopkar">Kas Kopkar</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold">Nominal Fee / Pemasukan (Rp):</label>
+                  <input type="number" class="form-control" placeholder="0">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                  <button class="btn btn-success w-100" onclick="executeWithProtection('Pemasukan Non-Retail', () => alert('Fee Berhasil Masuk ke Rekening Tujuan!'))"><i class="fas fa-save me-1"></i> Simpan Pemasukan</button>
+                </div>
               </div>
             </div>`;
           break;
@@ -428,9 +454,28 @@
             <div class="card p-3">
               <h5><i class="fas fa-lightbulb me-2"></i>Biaya Operasional Toko (Listrik, PDAM, Internet)</h5>
               <div class="row g-3 mt-1">
-                <div class="col-md-4"><input type="text" class="form-control" placeholder="Jenis Biaya / Vendor"></div>
-                <div class="col-md-4"><input type="number" class="form-control" placeholder="Nominal Pengeluaran (Rp)"></div>
-                <div class="col-md-4"><button class="btn btn-danger w-100" onclick="executeWithProtection('Biaya Operasional', () => alert('Biaya Operasional Berhasil Dicatat!'))">Simpan Pengeluaran</button></div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold">Jenis Biaya / Vendor:</label>
+                  <input type="text" class="form-control" placeholder="PLN / PDAM / Bytehome">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold">Sumber Rekening Pembayaran:</label>
+                  <select class="form-select">
+                    <option value="kas-tunai">Tunai (Kas Laci)</option>
+                    <option value="bni-direct">BNI Direct</option>
+                    <option value="wondr-bni">wondr by BNI</option>
+                    <option value="mybca">myBCA</option>
+                    <option value="livin-mandiri">Livin' by Mandiri</option>
+                    <option value="flip">Flip</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold">Nominal Pengeluaran (Rp):</label>
+                  <input type="number" class="form-control" placeholder="0">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                  <button class="btn btn-danger w-100" onclick="executeWithProtection('Biaya Operasional', () => alert('Biaya Operasional Berhasil Dicatat!'))"><i class="fas fa-save me-1"></i> Simpan Pengeluaran</button>
+                </div>
               </div>
             </div>`;
           break;
