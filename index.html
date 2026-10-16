@@ -14,7 +14,7 @@
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; }
     .sidebar { width: 260px; position: fixed; top: 0; bottom: 0; left: 0; background-color: #1a2c42; color: #fff; z-index: 1000; overflow-y: auto; }
     .sidebar .brand { padding: 20px 15px; font-size: 1.2rem; font-weight: bold; background-color: #142334; border-bottom: 1px solid #283d56; }
-    .sidebar .nav-link { color: #b8c7ce; padding: 10px 18px; border-left: 4px solid transparent; font-size: 0.88rem; }
+    .sidebar .nav-link { color: #b8c7ce; padding: 10px 18px; border-left: 4px solid transparent; font-size: 0.85rem; }
     .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: #243952; border-left-color: #00a65a; }
     .sidebar .nav-link i { width: 25px; }
     .main-content { margin-left: 260px; padding: 20px; min-height: 100vh; }
@@ -45,7 +45,7 @@
     <small class="text-warning">Mohon tunggu, sinkronisasi otomatis berjalan.</small>
   </div>
 
-  <!-- Sidebar 13 Menu Lengkap -->
+  <!-- Sidebar Menu (Termasuk Menu Baru Pembayaran Konsinyasi) -->
   <div class="sidebar" id="sidebar">
     <div class="brand"><i class="fas fa-store me-2"></i> 🏬 LTM Mart</div>
     <ul class="nav flex-column mt-1">
@@ -53,9 +53,10 @@
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('kasir', event)"><i class="fas fa-shopping-cart"></i> Kasir Penjualan</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('riwayat', event)"><i class="fas fa-receipt"></i> Riwayat Nota</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('stok', event)"><i class="fas fa-boxes"></i> Stok Barang</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('barang-masuk', event)"><i class="fas fa-box-open"></i> Barang Masuk / Produk Baru</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('barang-masuk', event)"><i class="fas fa-box-open"></i> Barang Masuk / Kulakan</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('master', event)"><i class="fas fa-tags"></i> Master Barang & Harga</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('konsinyasi', event)"><i class="fas fa-handshake"></i> Barang Konsinyasi</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('konsinyasi', event)"><i class="fas fa-handshake"></i> Laporan Konsinyasi</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('bayar-konsinyasi', event)"><i class="fas fa-file-invoice-dollar"></i> Bayar Tagihan Konsinyasi</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('pemasukan', event)"><i class="fas fa-funnel-dollar"></i> Pemasukan Luar</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('operasional', event)"><i class="fas fa-lightbulb"></i> Biaya Operasional</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('gaji', event)"><i class="fas fa-users-cog"></i> Pembayaran Gaji</a></li>
@@ -152,9 +153,10 @@
       'kasir': 'Kasir Penjualan',
       'riwayat': 'Riwayat Nota Transaksi',
       'stok': 'Stok Barang & Opname Deviasi',
-      'barang-masuk': 'Barang Masuk / Produk Baru',
+      'barang-masuk': 'Barang Masuk / Kulakan Baru',
       'master': 'Master Barang & Harga',
-      'konsinyasi': 'Barang Konsinyasi (Export .XLSX Supplier)',
+      'konsinyasi': 'Laporan Barang Konsinyasi (Export .XLSX Supplier)',
+      'bayar-konsinyasi': 'Pembayaran Tagihan Konsinyasi',
       'pemasukan': 'Pemasukan Luar / Tarik Tunai & Fee CV',
       'operasional': 'Biaya Operasional Toko',
       'gaji': 'Pembayaran Gaji Pegawai & Potong Gaji HRD',
@@ -261,58 +263,17 @@
               </div>
             </div>
 
-            <!-- Posisi Keuangan Per Pos Rekening / Metode Pembayaran -->
             <div class="card p-3 mb-4">
               <h5 class="mb-3"><i class="fas fa-wallet me-2 text-primary"></i>Posisi Saldo Keuangan Per Pos Rekening</h5>
               <div class="row g-3">
-                <div class="col-md-3">
-                  <div class="p-3 border rounded bg-light">
-                    <small class="text-muted">Tunai (Kas Laci)</small>
-                    <h5 class="fw-bold m-0 text-dark">Rp 3.500.000</h5>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="p-3 border rounded bg-light">
-                    <small class="text-muted">BNI Direct / Transfer BNI</small>
-                    <h5 class="fw-bold m-0 text-primary">Rp 14.200.000</h5>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="p-3 border rounded bg-light">
-                    <small class="text-muted">QRIS BNI</small>
-                    <h5 class="fw-bold m-0 text-success">Rp 2.850.000</h5>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="p-3 border rounded bg-light">
-                    <small class="text-muted">wondr by BNI</small>
-                    <h5 class="fw-bold m-0 text-info">Rp 4.100.000</h5>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="p-3 border rounded bg-light">
-                    <small class="text-muted">myBCA</small>
-                    <h5 class="fw-bold m-0 text-primary">Rp 6.300.000</h5>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="p-3 border rounded bg-light">
-                    <small class="text-muted">Livin' by Mandiri</small>
-                    <h5 class="fw-bold m-0 text-warning text-dark">Rp 5.200.000</h5>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="p-3 border rounded bg-light">
-                    <small class="text-muted">Flip</small>
-                    <h5 class="fw-bold m-0 text-secondary">Rp 1.500.000</h5>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="p-3 border rounded bg-light">
-                    <small class="text-muted">Kas Kopkar</small>
-                    <h5 class="fw-bold m-0 text-danger">Rp 9.800.000</h5>
-                  </div>
-                </div>
+                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">Tunai (Kas Laci)</small><h5 class="fw-bold m-0 text-dark">Rp 3.500.000</h5></div></div>
+                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">BNI Direct / Transfer BNI</small><h5 class="fw-bold m-0 text-primary">Rp 14.200.000</h5></div></div>
+                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">QRIS BNI</small><h5 class="fw-bold m-0 text-success">Rp 2.850.000</h5></div></div>
+                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">wondr by BNI</small><h5 class="fw-bold m-0 text-info">Rp 4.100.000</h5></div></div>
+                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">myBCA</small><h5 class="fw-bold m-0 text-primary">Rp 6.300.000</h5></div></div>
+                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">Livin' by Mandiri</small><h5 class="fw-bold m-0 text-warning text-dark">Rp 5.200.000</h5></div></div>
+                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">Flip</small><h5 class="fw-bold m-0 text-secondary">Rp 1.500.000</h5></div></div>
+                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">Kas Kopkar</small><h5 class="fw-bold m-0 text-danger">Rp 9.800.000</h5></div></div>
               </div>
             </div>
 
@@ -422,12 +383,53 @@
           container.innerHTML = `
             <div class="card p-3">
               <h5><i class="fas fa-box-open me-2"></i>Input Barang Masuk / Kulakan Baru</h5>
-              <div class="row g-2 mt-2">
-                <div class="col-md-6"><input type="text" id="masuk-barcode" class="form-control" placeholder="Scan Barcode / Ketik Kode Produk"></div>
-                <div class="col-md-3"><button class="btn btn-primary w-100" onclick="startCamera(val => document.getElementById('masuk-barcode').value = val)"><i class="fas fa-camera"></i> Scan Kamera</button></div>
-                <div class="col-md-3"><input type="number" class="form-control" placeholder="Jumlah Barang Masuk"></div>
+              <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Barcode / Kode Produk:</label>
+                  <div class="input-group">
+                    <input type="text" id="masuk-barcode" class="form-control" placeholder="Scan Barcode / Ketik Kode Produk">
+                    <button class="btn btn-primary" onclick="startCamera(val => document.getElementById('masuk-barcode').value = val)"><i class="fas fa-camera"></i> Scan</button>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Kategori Barang Masuk:</label>
+                  <select class="form-select" id="kategori-masuk" onchange="toggleRekeningBayar(this.value)">
+                    <option value="konsinyasi">Barang Konsinyasi (Titipan Supplier) - Tanpa Pembayaran</option>
+                    <option value="beli-langsung">Barang Beli Langsung - Bayar via Pos Rekening</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Satuan Terima:</label>
+                  <select class="form-select">
+                    <option value="eceran">Eceran / Pcs</option>
+                    <option value="dus">Dus / Karton</option>
+                    <option value="kodi">Kodi</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Jumlah Qty Diterima:</label>
+                  <input type="number" class="form-control" placeholder="0">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Total Nominal HPP (Rp):</label>
+                  <input type="number" class="form-control" placeholder="0">
+                </div>
+                <!-- Pilihan Rekening hanya muncul jika Beli Langsung -->
+                <div class="col-md-12" id="rekening-bayar-wrapper" style="display:none;">
+                  <label class="form-label fw-bold text-success">Pilih Pos Rekening Pembayaran Kulakan:</label>
+                  <select class="form-select border-success">
+                    <option value="tunai">Tunai (Kas Laci)</option>
+                    <option value="bni-direct">BNI Direct / Transfer BNI</option>
+                    <option value="qris-bni">QRIS BNI</option>
+                    <option value="wondr-bni">wondr by BNI</option>
+                    <option value="mybca">myBCA</option>
+                    <option value="livin-mandiri">Livin' by Mandiri</option>
+                    <option value="flip">Flip</option>
+                  </select>
+                  <small class="text-muted">Pastikan saldo pos rekening mencukupi. Jika kurang, lakukan transfer via menu <em>Mutasi Rekening</em> terlebih dahulu.</small>
+                </div>
               </div>
-              <button class="btn btn-success mt-3" onclick="executeWithProtection('Barang Masuk', () => alert('Stok & Data Kulakan Berhasil Dicatat!'))">Simpan Barang Masuk</button>
+              <button class="btn btn-success mt-4 w-100 py-2" onclick="executeWithProtection('Barang Masuk', () => alert('Barang Masuk Berhasil Disimpan & Stok Terupdate!'))"><i class="fas fa-save me-1"></i> Simpan Barang Masuk</button>
             </div>`;
           break;
 
@@ -468,6 +470,39 @@
                   </tbody>
                 </table>
               </div>
+            </div>`;
+          break;
+
+        case 'bayar-konsinyasi':
+          container.innerHTML = `
+            <div class="card p-3">
+              <h5><i class="fas fa-file-invoice-dollar me-2"></i>Pembayaran Tagihan Barang Konsinyasi ke Supplier</h5>
+              <p class="text-muted small">Gunakan menu ini untuk melunasi HPP barang konsinyasi yang sudah terjual kepada supplier. Pastikan saldo pos rekening mencukupi (jika kurang, lakukan transfer via <em>Mutasi Rekening</em> terlebih dahulu).</p>
+              <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Pilih Supplier & Tagihan:</label>
+                  <select class="form-select">
+                    <option value="sup1">Supplier Snack Bu Siti (Total Tagihan Terjual: Rp 200.000)</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Pilih Pos Rekening Pembayaran (Tunggal):</label>
+                  <select class="form-select border-success">
+                    <option value="tunai">Tunai (Kas Laci)</option>
+                    <option value="bni-direct">BNI Direct / Transfer BNI</option>
+                    <option value="qris-bni">QRIS BNI</option>
+                    <option value="wondr-bni">wondr by BNI</option>
+                    <option value="mybca">myBCA</option>
+                    <option value="livin-mandiri">Livin' by Mandiri</option>
+                    <option value="flip">Flip</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Nominal Pembayaran (Rp):</label>
+                  <input type="number" class="form-control" value="200000" placeholder="0">
+                </div>
+              </div>
+              <button class="btn btn-success mt-4 w-100 py-2" onclick="executeWithProtection('Pembayaran Konsinyasi', () => alert('Pembayaran Tagihan Konsinyasi ke Supplier Berhasil Diproses!'))"><i class="fas id-check-circle me-1"></i> Proses Pelunasan Tagihan Konsinyasi</button>
             </div>`;
           break;
 
@@ -560,21 +595,39 @@
         case 'mutasi':
           container.innerHTML = `
             <div class="card p-3">
-              <h5><i class="fas fa-university me-2"></i>Mutasi Rekening & Pelunasan BNI Direct (Overpay ke Hutang Kopkar)</h5>
+              <h5><i class="fas fa-university me-2"></i>Mutasi Rekening (Transfer Antar Pos) & Pelunasan BNI Direct</h5>
+              <p class="text-muted small">Gunakan menu ini untuk memindahkan saldo dari satu pos rekening ke pos rekening lainnya sebelum melakukan pembayaran kulakan atau tagihan konsinyasi.</p>
               <div class="row g-3 mt-1">
-                <div class="col-md-6">
-                  <label class="form-label fw-bold">Pilih Debitur / Tagihan:</label>
-                  <select class="form-select"><option>REG-001 - Ahmad Nur (Total Tagihan: Rp 450.000)</option></select>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Dari Rekening Asal:</label>
+                  <select class="form-select">
+                    <option value="bni-direct">BNI Direct / Transfer BNI</option>
+                    <option value="tunai">Tunai (Kas Laci)</option>
+                    <option value="qris-bni">QRIS BNI</option>
+                    <option value="wondr-bni">wondr by BNI</option>
+                    <option value="mybca">myBCA</option>
+                    <option value="livin-mandiri">Livin' by Mandiri</option>
+                    <option value="flip">Flip</option>
+                  </select>
                 </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-bold">Total Dana Diterima via BNI Direct (Rp):</label>
-                  <input type="number" class="form-control" placeholder="Contoh: 500000" oninput="calculateOverpay(this.value, 450000)">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Ke Rekening Tujuan:</label>
+                  <select class="form-select">
+                    <option value="bni-direct">BNI Direct / Transfer BNI</option>
+                    <option value="tunai">Tunai (Kas Laci)</option>
+                    <option value="qris-bni">QRIS BNI</option>
+                    <option value="wondr-bni">wondr by BNI</option>
+                    <option value="mybca">myBCA</option>
+                    <option value="livin-mandiri">Livin' by Mandiri</option>
+                    <option value="flip">Flip</option>
+                  </select>
                 </div>
-                <div class="col-md-12">
-                  <div class="alert alert-info" id="overpay-status">Status: Nominal pas dengan tagihan.</div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Nominal Transfer (Rp):</label>
+                  <input type="number" class="form-control" placeholder="0">
                 </div>
               </div>
-              <button class="btn btn-primary mt-2" onclick="executeWithProtection('Pelunasan BNI', () => alert('Pelunasan BNI Direct Berhasil Disimpan!'))">Proses Pelunasan Total</button>
+              <button class="btn btn-primary mt-4 w-100 py-2" onclick="executeWithProtection('Mutasi Rekening', () => alert('Transfer Antar Rekening Berhasil Dilakukan!'))"><i class="fas fa-exchange-alt me-1"></i> Proses Mutasi Rekening</button>
             </div>`;
           break;
 
@@ -583,38 +636,14 @@
             <div class="card p-3">
               <h5><i class="fas fa-wallet me-2"></i>Pengaturan Saldo Awal Akuntansi Terperinci Per Pos Rekening</h5>
               <div class="row g-3 mt-2">
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">Tunai (Kas Laci):</label>
-                  <input type="number" class="form-control" placeholder="0" value="3500000">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">BNI Direct / Transfer BNI:</label>
-                  <input type="number" class="form-control" placeholder="0" value="14200000">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">QRIS BNI:</label>
-                  <input type="number" class="form-control" placeholder="0" value="2850000">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">wondr by BNI:</label>
-                  <input type="number" class="form-control" placeholder="0" value="4100000">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">myBCA:</label>
-                  <input type="number" class="form-control" placeholder="0" value="6300000">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">Livin' by Mandiri:</label>
-                  <input type="number" class="form-control" placeholder="0" value="5200000">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">Flip:</label>
-                  <input type="number" class="form-control" placeholder="0" value="1500000">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">Kas Kopkar:</label>
-                  <input type="number" class="form-control" placeholder="0" value="9800000">
-                </div>
+                <div class="col-md-4"><label class="form-label fw-bold">Tunai (Kas Laci):</label><input type="number" class="form-control" value="3500000"></div>
+                <div class="col-md-4"><label class="form-label fw-bold">BNI Direct / Transfer BNI:</label><input type="number" class="form-control" value="14200000"></div>
+                <div class="col-md-4"><label class="form-label fw-bold">QRIS BNI:</label><input type="number" class="form-control" value="2850000"></div>
+                <div class="col-md-4"><label class="form-label fw-bold">wondr by BNI:</label><input type="number" class="form-control" value="4100000"></div>
+                <div class="col-md-4"><label class="form-label fw-bold">myBCA:</label><input type="number" class="form-control" value="6300000"></div>
+                <div class="col-md-4"><label class="form-label fw-bold">Livin' by Mandiri:</label><input type="number" class="form-control" value="5200000"></div>
+                <div class="col-md-4"><label class="form-label fw-bold">Flip:</label><input type="number" class="form-control" value="1500000"></div>
+                <div class="col-md-4"><label class="form-label fw-bold">Kas Kopkar:</label><input type="number" class="form-control" value="9800000"></div>
               </div>
               <button class="btn btn-primary mt-4 w-100 py-2" onclick="executeWithProtection('Saldo Awal', () => alert('Saldo Awal Terperinci Berhasil Diperbarui!'))"><i class="fas fa-save me-1"></i> Simpan Saldo Awal Terperinci</button>
             </div>`;
@@ -634,6 +663,13 @@
         default:
           container.innerHTML = `<div class="card p-4 text-center"><h5>Menu ${titles[menu] || menu} Aktif</h5></div>`;
           break;
+      }
+    }
+
+    function toggleRekeningBayar(val) {
+      const wrapper = document.getElementById('rekening-bayar-wrapper');
+      if(wrapper) {
+        wrapper.style.display = (val === 'beli-langsung') ? 'block' : 'none';
       }
     }
 
