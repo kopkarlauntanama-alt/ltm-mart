@@ -7,13 +7,13 @@
   <!-- Bootstrap 5 CSS & FontAwesome -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <!-- Chart.js, SheetJS (XLSX), JsBarcode, pdfMake & Html5-Qrcode Scanner -->
+  <!-- Chart.js, SheetJS, JsBarcode, pdfMake & Html5-Qrcode -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; font-size: 0.88rem; }
     .sidebar { width: 260px; position: fixed; top: 0; bottom: 0; left: 0; background-color: #1a2c42; color: #fff; z-index: 1000; overflow-y: auto; transition: all 0.3s ease; }
@@ -26,14 +26,12 @@
     .main-content.expanded { margin-left: 0; }
     .card-metric { border: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); color: #fff; }
     
-    /* Tabel Proporsional & Rapi */
     .table th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; background-color: #e9ecef; color: #333; }
     .table td { font-size: 0.82rem; vertical-align: middle; }
     .form-control-sm, .form-select-sm { font-size: 0.8rem; padding: 0.25rem 0.5rem; }
 
-    #reader { width: 100%; border-radius: 8px; overflow: hidden; }
+    #reader { width: 100%; min-height: 250px; background: #000; border-radius: 8px; }
     
-    /* Overlay Loading Anti-Double Click */
     #loading-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.6); color: white;
@@ -52,8 +50,7 @@
   <!-- Overlay Loading Notifikasi -->
   <div id="loading-overlay">
     <div class="spinner-border text-light mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
-    <h5 id="loading-text" class="fw-bold">Sedang Memproses & Menyimpan Data...</h5>
-    <small class="text-warning">Mohon tunggu, sinkronisasi otomatis berjalan.</small>
+    <h5 id="loading-text" class="fw-bold">Sedang Memproses Data...</h5>
   </div>
 
   <!-- Sidebar Menu -->
@@ -62,19 +59,8 @@
     <ul class="nav flex-column mt-1">
       <li class="nav-item"><a class="nav-link active" href="#" onclick="switchMenu('dashboard', event)"><i class="fas fa-chart-line"></i> Dashboard</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('kasir', event)"><i class="fas fa-shopping-cart"></i> Kasir Penjualan</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('riwayat', event)"><i class="fas fa-receipt"></i> Riwayat Nota</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('stok', event)"><i class="fas fa-boxes"></i> Stok Barang</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('barang-masuk', event)"><i class="fas fa-box-open"></i> Barang Masuk / Kulakan</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('master', event)"><i class="fas fa-tags"></i> Master Barang & Laba Potongan</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('konsinyasi', event)"><i class="fas fa-handshake"></i> Laporan Konsinyasi</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('bayar-konsinyasi', event)"><i class="fas fa-file-invoice-dollar"></i> Bayar Tagihan Konsinyasi</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('pemasukan', event)"><i class="fas fa-funnel-dollar"></i> Pemasukan Luar</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('operasional', event)"><i class="fas fa-lightbulb"></i> Biaya Operasional</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('gaji', event)"><i class="fas fa-users-cog"></i> Pembayaran Gaji</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('mutasi', event)"><i class="fas fa-university"></i> Mutasi Rekening</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('saldo-awal', event)"><i class="fas fa-wallet"></i> Saldo Awal</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('cetak-barcode', event)"><i class="fas fa-barcode"></i> Cetak Barcode</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('pengaturan', event)"><i class="fas fa-cogs text-warning"></i> Pengaturan Sistem</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('master', event)"><i class="fas fa-tags"></i> Master Barang</a></li>
     </ul>
   </div>
 
@@ -82,66 +68,10 @@
   <div class="main-content" id="main-content">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-dark btn-sm bg-white shadow-sm" onclick="toggleSidebar()" title="Tampilkan/Sembunyikan Menu">
-          <i class="fas fa-bars"></i>
-        </button>
+        <button class="btn btn-outline-dark btn-sm bg-white shadow-sm" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
         <h4 id="page-title" class="m-0 fs-5 fw-bold">Dashboard</h4>
       </div>
-      
-      <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-secondary btn-sm bg-white shadow-sm" onclick="refreshApp()" title="Refresh Aplikasi">
-          <i class="fas fa-sync-alt text-primary" id="refresh-icon"></i> <span class="d-none d-sm-inline">Refresh</span>
-        </button>
-        <button class="btn btn-outline-primary btn-sm bg-white shadow-sm" onclick="showLoginModal()" title="Pindah Akun Login">
-          <i class="fas fa-user-friends"></i> <span class="d-none d-sm-inline">Switch Login</span>
-        </button>
-        <span class="badge bg-secondary p-2 shadow-sm" id="user-badge">
-          <i class="fas fa-user-circle me-1"></i> <span id="current-username">Suwarsono</span> (<span id="current-role">Owner</span>)
-        </span>
-        <button class="btn btn-danger btn-sm shadow-sm" onclick="logoutApp()" title="Keluar Aplikasi">
-          <i class="fas fa-sign-out-alt"></i> <span class="d-none d-sm-inline">Keluar</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Modal Switch Login -->
-    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title fs-6"><i class="fas fa-user-lock me-2"></i>Login & Keamanan Sistem</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label fw-bold small">Pilih Pengguna / Shift Kasir:</label>
-              <select class="form-select" id="select-user">
-                <option value="Suwarsono|Owner">Suwarsono (Owner)</option>
-                <option value="Kasir Shift 1|Kasir">Kasir Shift 1 (Pagi)</option>
-                <option value="Kasir Shift 2|Kasir">Kasir Shift 2 (Sore)</option>
-                <option value="Admin Kopkar|Admin">Admin Kopkar</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold small">Password / PIN Akses:</label>
-              <div class="input-group">
-                <input type="password" class="form-control" id="user-pin" placeholder="Masukkan Password" value="1234">
-                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('user-pin', 'eye-icon')"><i class="fas fa-eye" id="eye-icon"></i></button>
-              </div>
-              <div class="form-text text-danger small" id="login-warning-text" style="display:none;">
-                <i class="fas fa-exclamation-triangle me-1"></i> Password salah! Percobaan ke-<span id="fail-count">1</span> dari 3. Jika salah 3x, password reset otomatis menjadi <strong>123456</strong>.
-              </div>
-            </div>
-            <div class="text-end mb-2">
-              <a href="#" class="text-decoration-none small text-primary fw-bold" onclick="triggerResetPassword()"><i class="fas fa-key me-1"></i> Lupa Password / Reset Password</a>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-            <button type="button" class="btn btn-primary btn-sm px-4" onclick="confirmSwitchLogin()"><i class="fas fa-sign-in-alt me-1"></i> Masuk</button>
-          </div>
-        </div>
-      </div>
+      <span class="badge bg-secondary p-2 shadow-sm"><i class="fas fa-user-circle me-1"></i> Suwarsono (Owner)</span>
     </div>
 
     <!-- Scanner Barcode Modal -->
@@ -152,7 +82,7 @@
             <h5 class="modal-title fs-6"><i class="fas fa-camera me-2"></i>Scan Barcode Kamera HP</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopCamera()"></button>
           </div>
-          <div class="modal-body text-center">
+          <div class="modal-body text-center p-2">
             <div id="reader"></div>
             <p class="text-muted mt-2 small">Arahkan kamera HP ke barcode produk</p>
           </div>
@@ -167,515 +97,130 @@
   <script>
     let activeScanCallback = null;
     let html5QrCode = null;
-    let loginFailAttempt = 0;
 
-    // Mock database master produk untuk uji coba pencarian nama/barcode
     let masterProdukDB = [
-      { barcode: "8991001", nama: "Aqua 600ml", hppEcer: 3000, jualEcer: 4000, maxDiskon: 500 },
-      { barcode: "8991002", nama: "Indomie Goreng", hppEcer: 2500, jualEcer: 3000, maxDiskon: 300 },
-      { barcode: "8991003", nama: "Sosro Botol", hppEcer: 4000, jualEcer: 5000, maxDiskon: 500 },
-      { barcode: "8991004", nama: "Sarung BHS Classic", hppEcer: 150000, jualEcer: 180000, maxDiskon: 10000 }
+      { barcode: "8991001", nama: "Aqua 600ml", jualEcer: 4000 },
+      { barcode: "8991002", nama: "Indomie Goreng", jualEcer: 3000 },
+      { barcode: "8991003", nama: "Teh Botol Sosro", jualEcer: 5000 }
     ];
-
-    let rekeningState = {
-      tunai: 0,
-      bniDirect: 0,
-      qris: 0,
-      wondr: 0,
-      mybca: 0,
-      livin: 0,
-      flip: 0,
-      kopkar: 0
-    };
-
-    const titles = {
-      'dashboard': 'Dashboard Keuangan (Akumulasi Piutang, Hutang, Konsinyasi & Saldo Rekening)',
-      'kasir': 'Kasir Penjualan (Entertaint, Potong Gaji HRD & Validasi Batas Potongan)',
-      'riwayat': 'Riwayat Nota Transaksi',
-      'stok': 'Stok Barang & Opname Deviasi',
-      'barang-masuk': 'Barang Masuk / Kulakan Baru (Multi-Satuan & HPP Konversi)',
-      'master': 'Master Barang & Laba Potongan Maksimal (Eceran, Dus, Kodi)',
-      'konsinyasi': 'Laporan Barang Konsinyasi (Export .XLSX Supplier)',
-      'bayar-konsinyasi': 'Pembayaran Tagihan Konsinyasi (Centang Periode & Nominal Otomatis)',
-      'pemasukan': 'Pemasukan Luar / Tarik Tunai & Fee CV (Fee & Biaya Admin)',
-      'operasional': 'Biaya Operasional Toko (Multi-Item Belanja, Admin Bank, Gaji & Trend)',
-      'gaji': 'Pembayaran Gaji Pegawai & Potong Gaji HRD',
-      'mutasi': 'Mutasi Rekening & Pelunasan BNI Direct (Overpay)',
-      'saldo-awal': 'Saldo Awal Akuntansi Terperinci',
-      'cetak-barcode': 'Cetak Barcode Produk',
-      'pengaturan': 'Pengaturan Sistem (Manajemen User & Pos Rekening)'
-    };
-
-    function getTodayDate() {
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    }
-
-    function showLoading(msg = "Sedang Memproses Data...") {
-      document.getElementById('loading-text').innerText = msg;
-      document.getElementById('loading-overlay').style.display = 'flex';
-    }
-
-    function hideLoading() {
-      document.getElementById('loading-overlay').style.display = 'none';
-    }
-
-    function executeWithProtection(actionName, callback) {
-      showLoading(`Sedang Memproses ${actionName}...`);
-      setTimeout(() => {
-        callback();
-        hideLoading();
-      }, 1000);
-    }
-
-    function showLoginModal() {
-      const modal = new bootstrap.Modal(document.getElementById('loginModal'));
-      modal.show();
-    }
-
-    function togglePasswordVisibility(inputId, iconId) {
-      const pinInput = document.getElementById(inputId);
-      const eyeIcon = document.getElementById(iconId);
-      if (pinInput.type === 'password') {
-        pinInput.type = 'text';
-        eyeIcon.classList.remove('fa-eye');
-        eyeIcon.classList.add('fa-eye-slash');
-      } else {
-        pinInput.type = 'password';
-        eyeIcon.classList.remove('fa-eye-slash');
-        eyeIcon.classList.add('fa-eye');
-      }
-    }
-
-    function triggerResetPassword() {
-      loginFailAttempt = 0;
-      document.getElementById('user-pin').value = '123456';
-      alert("NOTIFIKASI KEAMANAN: Password berhasil di-reset oleh sistem menjadi: 123456");
-      const warningEl = document.getElementById('login-warning-text');
-      if (warningEl) warningEl.style.display = 'none';
-    }
-
-    function confirmSwitchLogin() {
-      const pin = document.getElementById('user-pin').value;
-      if (pin === '1234' || pin === '123456' || pin === 'admin') {
-        const userVal = document.getElementById('select-user').value.split('|');
-        document.getElementById('current-username').innerText = userVal[0];
-        document.getElementById('current-role').innerText = userVal[1];
-        const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
-        if (modal) modal.hide();
-        loginFailAttempt = 0;
-        alert(`Berhasil login sebagai: ${userVal[0]} (${userVal[1]})`);
-      } else {
-        loginFailAttempt++;
-        const warningEl = document.getElementById('login-warning-text');
-        document.getElementById('fail-count').innerText = loginFailAttempt;
-        if (warningEl) warningEl.style.display = 'block';
-
-        if (loginFailAttempt >= 3) {
-          triggerResetPassword();
-        }
-      }
-    }
-
-    function logoutApp() {
-      if (confirm("Apakah Anda yakin ingin keluar dari aplikasi LTM Mart?")) {
-        document.getElementById('content-area').innerHTML = `
-          <div class="card p-5 text-center my-5 shadow-sm">
-            <h3 class="text-danger mb-3 fs-4"><i class="fas fa-lock me-2"></i>Sesi Keluar</h3>
-            <p class="text-muted">Sesi Anda telah diakhiri secara aman.</p>
-            <div class="mt-3">
-              <button class="btn btn-primary" onclick="showLoginModal()"><i class="fas fa-key me-1"></i> Login Kembali</button>
-            </div>
-          </div>`;
-      }
-    }
-
-    function refreshApp() {
-      const icon = document.getElementById('refresh-icon');
-      if (icon) icon.classList.add('fa-sync-alt');
-      setTimeout(() => { window.location.reload(true); }, 300);
-    }
-
-    function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const mainContent = document.getElementById('main-content');
-      if (window.innerWidth <= 768) {
-        sidebar.classList.toggle('mobile-show');
-      } else {
-        sidebar.classList.toggle('collapsed');
-        mainContent.classList.toggle('expanded');
-      }
-    }
 
     function switchMenu(menu, evt) {
       document.querySelectorAll('.sidebar .nav-link').forEach(el => el.classList.remove('active'));
       if(evt && evt.currentTarget) evt.currentTarget.classList.add('active');
-      document.getElementById('page-title').innerText = titles[menu] || 'LTM Mart';
       renderContent(menu);
-      if (window.innerWidth <= 768) {
-        document.getElementById('sidebar').classList.remove('mobile-show');
-      }
     }
 
     function renderContent(menu) {
       const container = document.getElementById('content-area');
-
-      switch(menu) {
-        case 'dashboard':
-          container.innerHTML = `
-            <div class="row g-3 mb-4">
-              <div class="col-md-3"><div class="card card-metric bg-success p-3"><small>Laba Bersih Bulan Ini</small><h4 class="m-0 fw-bold">Rp 0</h4><small class="text-white-50" style="font-size: 0.75rem;">(Laba Kotor - Gaji - Ops)</small></div></div>
-              <div class="col-md-3"><div class="card card-metric bg-warning text-dark p-3"><small>Piutang Kopkar (Akumulasi)</small><h4 class="m-0 fw-bold">Rp 0</h4><small class="text-muted" style="font-size: 0.75rem;">Potong Gaji Belum Lunas</small></div></div>
-              <div class="col-md-3"><div class="card card-metric bg-danger p-3"><small>Hutang Kopkar / Overpay BNI</small><h4 class="m-0 fw-bold">Rp 0</h4><small class="text-white-50" style="font-size: 0.75rem;">Kelebihan Bayar Direct</small></div></div>
-              <div class="col-md-3"><div class="card card-metric bg-info text-dark p-3"><small>Aset Barang Konsinyasi</small><h4 class="m-0 fw-bold" id="dash-konsinyasi-val">Rp 0</h4><small class="text-muted" id="dash-konsinyasi-status" style="font-size: 0.75rem;">Belum Lunas</small></div></div>
-            </div>
-
-            <div class="card p-3 mb-4 bg-white shadow-sm border-0 border-start border-success border-4">
-              <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;"><i class="fas fa-wallet me-2 text-success"></i>Posisi Saldo & Nominal Uang di Tiap-Tiap Rekening (Realtime)</h6>
-              <div class="row g-3">
-                <div class="col-md-3 col-sm-6"><div class="p-3 bg-light rounded border"><small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-money-bill-wave text-success me-1"></i> Tunai (Kas Laci)</small><h5 class="fw-bold text-dark m-0 mt-1" id="saldo-tunai">Rp ${rekeningState.tunai.toLocaleString('id-ID')}</h5></div></div>
-                <div class="col-md-3 col-sm-6"><div class="p-3 bg-light rounded border"><small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-university text-primary me-1"></i> BNI Direct</small><h5 class="fw-bold text-dark m-0 mt-1" id="saldo-bni-direct">Rp ${rekeningState.bniDirect.toLocaleString('id-ID')}</h5></div></div>
-                <div class="col-md-3 col-sm-6"><div class="p-3 bg-light rounded border"><small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-qrcode text-danger me-1"></i> QRIS BNI</small><h5 class="fw-bold text-dark m-0 mt-1" id="saldo-qris">Rp ${rekeningState.qris.toLocaleString('id-ID')}</h5></div></div>
-                <div class="col-md-3 col-sm-6"><div class="p-3 bg-light rounded border"><small class="text-muted d-block fw-bold" style="font-size: 0.75rem;"><i class="fas fa-mobile-alt text-warning me-1"></i> wondr by BNI</small><h5 class="fw-bold text-dark m-0 mt-1" id="saldo-wondr">Rp ${rekeningState.wondr.toLocaleString('id-ID')}</h5></div></div>
+      if (menu === 'kasir') {
+        container.innerHTML = `
+          <div class="card p-3 shadow-sm">
+            <h6 class="fw-bold mb-3"><i class="fas fa-shopping-cart me-2"></i>Kasir Penjualan</h6>
+            <div class="row g-2 mb-3">
+              <div class="col-md-12 position-relative">
+                <label class="form-label fw-bold small">Scan Barcode / Ketik Nama Produk:</label>
+                <div class="input-group input-group-sm">
+                  <input type="text" id="barcode-input" class="form-control" placeholder="Ketik nama atau scan barcode..." oninput="handlePencarianBarang(this.value)" autocomplete="off">
+                  <button class="btn btn-primary px-3" onclick="startCamera(val => { document.getElementById('barcode-input').value = val; handlePencarianBarang(val); })">
+                    <i class="fas fa-camera me-1"></i> Scan Kamera
+                  </button>
+                </div>
+                <div id="pencarian-suggestions" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1050; display: none;"></div>
               </div>
             </div>
-          `;
-          break;
-
-        case 'kasir':
-          container.innerHTML = `
-            <div class="card p-3">
-              <div class="row g-2 mb-3">
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Tanggal Transaksi:</label>
-                  <input type="date" class="form-control form-control-sm" id="tgl-transaksi-kasir" value="${getTodayDate()}">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Tipe Pembeli:</label>
-                  <select class="form-select form-select-sm border-primary" id="tipe-pembeli" onchange="hitungTotalBelanja()">
-                    <option value="reguler">Pembeli Reguler (Harga Reguler)</option>
-                    <option value="member">Pembeli Member (Harga Khusus Member)</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-bold small">Kategori Pembayaran:</label>
-                  <select class="form-select form-select-sm border-success" id="metode-bayar" onchange="checkMetodeBayar(this.value)">
-                    <option value="tunai">Tunai (Kas Laci)</option>
-                    <option value="qris-bni">QRIS BNI</option>
-                    <option value="bni-direct">BNI Direct / Transfer BNI</option>
-                    <option value="wondr-bni">wondr by BNI</option>
-                    <option value="entertaint" class="text-warning fw-bold">✨ Entertaint (Pembelian Gratis - Masuk Ops)</option>
-                    <option value="potong-gaji">Potong Gaji Bulanan (Cut-Off 16-15)</option>
-                    <option value="tempo">Penjualan Tempo (Bebas Waktu)</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- INPUT PENCARIAN BARCODE / KETIK NAMA BARANG DENGAN FITUR AUTO-SEARCH & KAMERA -->
-              <div class="row g-2 mb-3">
-                <div class="col-md-12 position-relative">
-                  <label class="form-label fw-bold small"><i class="fas fa-barcode me-1 text-primary"></i> Scan Barcode atau Ketik Nama Barang:</label>
-                  <div class="input-group input-group-sm">
-                    <input type="text" id="barcode-input" class="form-control" placeholder="Ketik nama produk atau scan barcode..." oninput="handlePencarianBarang(this.value)" autocomplete="off">
-                    <button class="btn btn-primary" onclick="startCamera(val => { document.getElementById('barcode-input').value = val; handlePencarianBarang(val); })">
-                      <i class="fas fa-camera"></i> Scan Kamera
-                    </button>
-                  </div>
-                  <!-- Dropdown Hasil Pencarian Pintar (Live Suggestions) -->
-                  <div id="pencarian-suggestions" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1050; display: none; max-height: 200px; overflow-y: auto;"></div>
-                </div>
-              </div>
-
-              <div class="table-responsive">
-                <table class="table align-middle">
-                  <thead>
-                    <tr>
-                      <th>Produk & Status Stok</th>
-                      <th>Satuan Pembelian</th>
-                      <th style="width: 80px;">Qty</th>
-                      <th style="width: 220px;">Potongan Diskon</th>
-                      <th>Subtotal (Rp)</th>
-                      <th class="text-center" style="width: 60px;">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody id="cart-tbody">
-                    <!-- Item keranjang belanja muncul di sini -->
-                  </tbody>
-                </table>
-              </div>
-
-              <div id="diskon-warning" class="alert alert-danger mt-2 py-2 small" style="display:none;">
-                <i class="fas fa-exclamation-triangle me-1"></i> <strong>Peringatan Potongan Melebihi Batas:</strong> Nominal diskon melebihi batas maksimal potongan di Master Barang!
-              </div>
-
-              <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-                <button class="btn btn-outline-danger btn-sm" onclick="batalHapusSeluruhTransaksi()"><i class="fas fa-trash-restore me-1"></i> Batal / Hapus Transaksi</button>
-                <div class="d-flex align-items-center gap-3">
-                  <h5 class="m-0 fw-bold">Total Bayar: <span class="text-success" id="grand-total">Rp 0</span></h5>
-                  <button class="btn btn-success px-4" onclick="executeWithProtection('Transaksi Penjualan', () => alert('Transaksi Berhasil Disimpan & Tersinkronisasi!'))"><i class="fas fa-check-circle me-1"></i> Selesaikan Transaksi</button>
-                </div>
-              </div>
-            </div>`;
-          break;
-
-        case 'barang-masuk':
-          container.innerHTML = `
-            <div class="card p-3">
-              <h6 class="fw-bold"><i class="fas fa-box-open me-2"></i>Input Barang Masuk / Kulakan (Multi-Satuan & Konversi HPP)</h6>
-              <div class="row g-2 mt-1">
-                <div class="col-md-6">
-                  <label class="form-label fw-bold small">Tanggal Transaksi / Kedatangan:</label>
-                  <input type="date" class="form-control form-control-sm" id="tgl-barang-masuk" value="${getTodayDate()}">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-bold small">Barcode / Nama Produk (Pencarian & Scan):</label>
-                  <div class="input-group input-group-sm">
-                    <input type="text" id="masuk-barcode" class="form-control" placeholder="Scan barcode atau ketik nama produk...">
-                    <button class="btn btn-primary" onclick="startCamera(val => document.getElementById('masuk-barcode').value = val)"><i class="fas fa-camera"></i> Scan Kamera</button>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-bold small">Nama Produk (Jika Baru):</label>
-                  <input type="text" class="form-control form-control-sm" placeholder="Nama Produk">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-bold small">Kategori Barang Masuk:</label>
-                  <select class="form-select form-select-sm" id="kategori-masuk" onchange="toggleRekeningBayar(this.value)">
-                    <option value="konsinyasi">Barang Konsinyasi (Tanpa Bayar)</option>
-                    <option value="beli-langsung">Beli Langsung (Bayar via Rekening)</option>
-                  </select>
-                </div>
-              </div>
-              <button class="btn btn-success mt-3 w-100 py-2" onclick="executeWithProtection('Barang Masuk', () => alert('Barang Masuk Berhasil!'))"><i class="fas fa-save me-1"></i> Simpan Barang Masuk & Update HPP Master</button>
-            </div>`;
-          break;
-
-        case 'master':
-          container.innerHTML = `
-            <div class="card p-3">
-              <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <div>
-                  <h6 class="m-0 fw-bold"><i class="fas fa-tags me-2"></i>Master Barang & Penentuan Batas Maksimal Potongan</h6>
-                  <small class="text-muted" style="font-size: 0.75rem;">Gunakan pencarian atau scan untuk mengelola data produk.</small>
-                </div>
-                <div class="input-group input-group-sm w-auto">
-                  <input type="text" class="form-control" placeholder="Cari nama / barcode..." id="master-search">
-                  <button class="btn btn-outline-primary" onclick="startCamera(val => document.getElementById('master-search').value = val)"><i class="fas fa-camera"></i></button>
-                </div>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-bordered align-middle">
-                  <thead class="table-secondary">
-                    <tr>
-                      <th>Barcode & Nama Produk</th>
-                      <th>Rincian HPP</th>
-                      <th>Harga Jual</th>
-                      <th class="text-center">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr><td colspan="4" class="text-center text-muted py-3">Belum ada data produk di master.</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>`;
-          break;
-
-        default:
-          container.innerHTML = `<div class="card p-4 text-center"><h5>Menu ${titles[menu] || menu} Aktif</h5></div>`;
-          break;
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead><tr><th>Produk</th><th>Harga</th><th style="width: 80px;">Qty</th><th>Subtotal</th><th class="text-center">Aksi</th></tr></thead>
+                <tbody id="cart-tbody"></tbody>
+              </table>
+            </div>
+          </div>`;
+      } else {
+        container.innerHTML = `<div class="card p-4 text-center"><h5>Menu Dashboard / Aktif</h5></div>`;
       }
     }
 
-    /* FUNGSI PENCARIAN PINTAR (BARCODE ATAU NAMA BARANG) */
     function handlePencarianBarang(keyword) {
       const suggestionBox = document.getElementById('pencarian-suggestions');
-      if (!suggestionBox) return;
-
-      if (!keyword || keyword.trim() === "") {
-        suggestionBox.style.display = 'none';
-        suggestionBox.innerHTML = '';
-        return;
-      }
-
+      if (!keyword || keyword.trim() === "") { suggestionBox.style.display = 'none'; return; }
       const query = keyword.toLowerCase();
-      // Filter berdasarkan kecocokan barcode atau nama produk dari master database
-      const filtered = masterProdukDB.filter(item => 
-        item.barcode.toLowerCase().includes(query) || item.nama.toLowerCase().includes(query)
-      );
-
+      const filtered = masterProdukDB.filter(item => item.barcode.toLowerCase().includes(query) || item.nama.toLowerCase().includes(query));
       if (filtered.length > 0) {
         let html = '';
         filtered.forEach(prod => {
           html += `<button type="button" class="list-group-item list-group-item-action py-2" onclick="pilihProdukKeranjang('${prod.barcode}')">
-            <strong>${prod.nama}</strong> <small class="text-muted">(Barcode: ${prod.barcode}) - Rp ${prod.jualEcer.toLocaleString('id-ID')}</small>
+            <strong>${prod.nama}</strong> (${prod.barcode}) - Rp ${prod.jualEcer}
           </button>`;
         });
         suggestionBox.innerHTML = html;
         suggestionBox.style.display = 'block';
-
-        // Jika pencarian persis sama dengan barcode, langsung masukkan ke keranjang secara otomatis
-        const exactMatch = filtered.find(item => item.barcode.toLowerCase() === query);
-        if (exactMatch) {
-          pilihProdukKeranjang(exactMatch.barcode);
-          suggestionBox.style.display = 'none';
-        }
       } else {
-        suggestionBox.innerHTML = `<div class="list-group-item text-muted small">Produk tidak ditemukan</div>`;
-        suggestionBox.style.display = 'block';
+        suggestionBox.style.display = 'none';
       }
     }
 
-    /* TAMBAH PRODUK KE KERANJANG KASIR */
     function pilihProdukKeranjang(barcode) {
       const prod = masterProdukDB.find(item => item.barcode === barcode);
       if (!prod) return;
-
       const tbody = document.getElementById('cart-tbody');
-      if (!tbody) return;
-
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <div class="fw-bold">${prod.nama}</div>
-          <small class="text-muted">Barcode: ${prod.barcode}</small>
-        </td>
-        <td>
-          <select class="form-select form-select-sm satuan-select" onchange="hitungTotalBelanja()">
-            <option value="${prod.jualEcer}" data-max-diskon="${prod.maxDiskon}">Eceran / Pcs (Rp ${prod.jualEcer.toLocaleString('id-ID')})</option>
-          </select>
-        </td>
-        <td><input type="number" class="form-control form-control-sm qty-input" value="1" min="1" oninput="hitungTotalBelanja()"></td>
-        <td><input type="number" class="form-control form-control-sm diskon-input" value="0" placeholder="0" oninput="validasiDiskonMaksimal(this); hitungTotalBelanja();"></td>
-        <td class="fw-bold subtotal-text">Rp ${prod.jualEcer.toLocaleString('id-ID')}</td>
-        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisItem(this)"><i class="fas fa-trash"></i></button></td>
-      `;
+      tr.innerHTML = `<td>${prod.nama}</td><td>Rp ${prod.jualEcer}</td><td><input type="number" class="form-control form-control-sm" value="1"></td><td>Rp ${prod.jualEcer}</td><td class="text-center"><button class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()"><i class="fas fa-trash"></i></button></td>`;
       tbody.appendChild(tr);
-
-      // Reset input pencarian
-      const inputEl = document.getElementById('barcode-input');
-      if (inputEl) inputEl.value = '';
-      const suggestionBox = document.getElementById('pencarian-suggestions');
-      if (suggestionBox) suggestionBox.style.display = 'none';
-
-      hitungTotalBelanja();
+      document.getElementById('pencarian-suggestions').style.display = 'none';
+      document.getElementById('barcode-input').value = '';
     }
 
-    function hapusBarisItem(btn) {
-      const row = btn.closest('tr');
-      if (row) {
-        row.remove();
-        hitungTotalBelanja();
-      }
-    }
-
-    function hitungTotalBelanja() {
-      const rows = document.querySelectorAll('#cart-tbody tr');
-      let grandTotal = 0;
-
-      rows.forEach(row => {
-        const satuanSelect = row.querySelector('.satuan-select');
-        const qtyInput = row.querySelector('.qty-input');
-        const diskonInput = row.querySelector('.diskon-input');
-        const subtotalText = row.querySelector('.subtotal-text');
-
-        if(satuanSelect && qtyInput && diskonInput && subtotalText) {
-          const hargaSatuan = parseFloat(satuanSelect.value) || 0;
-          const qty = parseFloat(qtyInput.value) || 0;
-          const diskon = parseFloat(diskonInput.value) || 0;
-
-          let subtotal = (hargaSatuan * qty) - diskon;
-          if (subtotal < 0) subtotal = 0;
-
-          subtotalText.innerText = "Rp " + Math.round(subtotal).toLocaleString('id-ID');
-          grandTotal += subtotal;
-        }
-      });
-
-      const grandTotalEl = document.getElementById('grand-total');
-      if(grandTotalEl) grandTotalEl.innerText = "Rp " + Math.round(grandTotal).toLocaleString('id-ID');
-    }
-
-    function validasiDiskonMaksimal(inputEl) {
-      const row = inputEl.closest('tr');
-      if (!row) return;
-      const satuanSelect = row.querySelector('.satuan-select');
-      const selectedOpt = satuanSelect?.options[satuanSelect.selectedIndex];
-      const maxDiskon = parseFloat(selectedOpt?.getAttribute('data-max-diskon')) || 0;
-      const diskonVal = parseFloat(inputEl.value) || 0;
-      const warningEl = document.getElementById('diskon-warning');
-
-      if (diskonVal > maxDiskon) {
-        if (warningEl) {
-          warningEl.style.display = 'block';
-          warningEl.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i> Potongan Rp ${diskonVal.toLocaleString('id-ID')} melebihi batas maksimal (Rp ${maxDiskon.toLocaleString('id-ID')})!`;
-        }
-        inputEl.classList.add('is-invalid');
-      } else {
-        if (warningEl) warningEl.style.display = 'none';
-        inputEl.classList.remove('is-invalid');
-      }
-    }
-
-    function batalHapusSeluruhTransaksi() {
-      if (confirm("Apakah Anda yakin ingin membatalkan transaksi ini?")) {
-        const tbody = document.getElementById('cart-tbody');
-        if (tbody) tbody.innerHTML = '';
-        hitungTotalBelanja();
-      }
-    }
-
-    function checkMetodeBayar(val) {
-      const wEntertaint = document.getElementById('wrapper-entertaint');
-      if (wEntertaint) wEntertaint.style.display = (val === 'entertaint') ? 'flex' : 'none';
-    }
-
-    function toggleRekeningBayar(val) {
-      const wrapper = document.getElementById('rekening-bayar-wrapper');
-      if(wrapper) wrapper.style.display = (val === 'beli-langsung') ? 'block' : 'none';
-    }
-
-    /* FUNGSI UTAMA KAMERA SCANNER (HTML5-QRCODE) */
+    /* FUNGSI KAMERA SCANNER FIX */
     function startCamera(callback) {
       activeScanCallback = callback;
       const modal = new bootstrap.Modal(document.getElementById('scannerModal'));
       modal.show();
 
+      // Beri jeda 500ms agar modal Bootstrap selesai terbuka penuh sebelum mengaktifkan modul kamera
       setTimeout(() => {
-        if (!html5QrCode) {
-          html5QrCode = new Html5Qrcode("reader");
+        if (html5QrCode) {
+          html5QrCode.clear();
         }
+
+        html5QrCode = new Html5Qrcode("reader");
         
-        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-        
-        html5QrCode.start(
-          { facingMode: "environment" }, 
-          config, 
-          (decodedText) => {
-            if (activeScanCallback) {
-              activeScanCallback(decodedText);
-            }
-            stopCamera();
-            modal.hide();
-          },
-          (errorMessage) => {}
-        ).catch(err => {
-          alert("Tidak dapat mengakses kamera belakang. Pastikan izin kamera diizinkan (Allow) pada browser HP Anda. Error: " + err);
+        // Panggil izin kamera HP secara eksplisit
+        Html5Qrcode.getCameras().then(devices => {
+          if (devices && devices.length) {
+            // Mengutamakan penggunaan kamera belakang (back camera)
+            let backCamera = devices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('belakang'));
+            let cameraId = backCamera ? backCamera.id : devices[devices.length - 1].id;
+
+            html5QrCode.start(
+              cameraId,
+              { fps: 10, qrbox: { width: 250, height: 150 } },
+              (decodedText) => {
+                if (activeScanCallback) activeScanCallback(decodedText);
+                stopCamera();
+                modal.hide();
+              },
+              (errorMessage) => {}
+            );
+          } else {
+            alert("Tidak ada perangkat kamera yang terdeteksi di HP Anda.");
+          }
+        }).catch(err => {
+          alert("Izin kamera ditolak oleh HP/Browser. Buka Pengaturan HP > Chrome > Izin > Izinkan Kamera.\nDetail: " + err);
         });
-      }, 300);
+      }, 500);
     }
 
     function stopCamera() {
-      if (html5QrCode && html5QrCode.isScanning) {
+      if (html5QrCode) {
         html5QrCode.stop().then(() => {
           html5QrCode.clear();
-        }).catch(err => {
-          console.error("Gagal menghentikan kamera.", err);
-        });
+        }).catch(err => {});
       }
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+      document.getElementById('main-content').classList.toggle('expanded');
     }
 
     window.onload = () => switchMenu('dashboard');
