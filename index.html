@@ -59,7 +59,7 @@
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('riwayat', event)"><i class="fas fa-receipt"></i> Riwayat Nota</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('stok', event)"><i class="fas fa-boxes"></i> Stok Barang</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('barang-masuk', event)"><i class="fas fa-box-open"></i> Barang Masuk / Kulakan</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('master', event)"><i class="fas fa-tags"></i> Master Barang & Harga</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('master', event)"><i class="fas fa-tags"></i> Master Barang & Laba Potongan</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('konsinyasi', event)"><i class="fas fa-handshake"></i> Laporan Konsinyasi</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('bayar-konsinyasi', event)"><i class="fas fa-file-invoice-dollar"></i> Bayar Tagihan Konsinyasi</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('pemasukan', event)"><i class="fas fa-funnel-dollar"></i> Pemasukan Luar</a></li>
@@ -167,11 +167,11 @@
 
     const titles = {
       'dashboard': 'Dashboard Keuangan (Akumulasi Piutang, Hutang, Konsinyasi & Tempo Realtime)',
-      'kasir': 'Kasir Penjualan (Entertaint, Potong Gaji HRD & Tempo Realtime)',
+      'kasir': 'Kasir Penjualan (Entertaint, Potong Gaji HRD & Validasi Batas Potongan)',
       'riwayat': 'Riwayat Nota Transaksi',
       'stok': 'Stok Barang & Opname Deviasi',
       'barang-masuk': 'Barang Masuk / Kulakan Baru (Multi-Satuan & HPP Konversi)',
-      'master': 'Master Barang & Harga (Rincian HPP Eceran, Dus, Kodi)',
+      'master': 'Master Barang & Laba Potongan Maksimal (Eceran, Dus, Kodi)',
       'konsinyasi': 'Laporan Barang Konsinyasi (Export .XLSX Supplier)',
       'bayar-konsinyasi': 'Pembayaran Tagihan Konsinyasi (Centang Periode & Nominal Otomatis)',
       'pemasukan': 'Pemasukan Luar / Tarik Tunai & Fee CV (Fee & Biaya Admin)',
@@ -547,7 +547,7 @@
                       <th>Produk & Status Stok</th>
                       <th>Satuan Pembelian</th>
                       <th>Qty</th>
-                      <th>Potongan Harga (Rp)</th>
+                      <th>Potongan Diskon (Maks Ecer Rp 4.000)</th>
                       <th>Subtotal (Rp)</th>
                       <th class="text-center">Aksi</th>
                     </tr>
@@ -560,13 +560,13 @@
                       </td>
                       <td>
                         <select class="form-select form-select-sm satuan-select" onchange="hitungTotalBelanja()">
-                          <option value="34000">Eceran / Pcs (Rp 34.000)</option>
-                          <option value="400000">Dus (Rp 400.000)</option>
-                          <option value="650000">Kodi (Rp 650.000)</option>
+                          <option value="34000" data-max-diskon="4000">Eceran / Pcs (Rp 34.000)</option>
+                          <option value="400000" data-max-diskon="35000">Dus (Rp 400.000)</option>
+                          <option value="650000" data-max-diskon="50000">Kodi (Rp 650.000)</option>
                         </select>
                       </td>
                       <td><input type="number" class="form-control form-control-sm qty-input" value="1" style="width: 70px;" oninput="hitungTotalBelanja()"></td>
-                      <td><input type="number" class="form-control form-control-sm diskon-input" value="0" placeholder="0" oninput="validasiDiskonLaba(this, 3000); hitungTotalBelanja();"></td>
+                      <td><input type="number" class="form-control form-control-sm diskon-input" value="0" placeholder="0" oninput="validasiDiskonMaksimal(this); hitungTotalBelanja();"></td>
                       <td class="fw-bold text-success subtotal-text">Rp 34.000</td>
                       <td class="text-center">
                         <button class="btn btn-outline-danger btn-sm" onclick="hapusBarisItem(this)" title="Hapus Item Ini"><i class="fas fa-trash-alt"></i></button>
@@ -577,7 +577,7 @@
               </div>
 
               <div id="diskon-warning" class="alert alert-danger mt-2" style="display:none;">
-                <i class="fas fa-exclamation-triangle me-1"></i> <strong>Peringatan Potongan Tidak Valid:</strong> Nominal diskon melebihi batas minimal laba yang diizinkan!
+                <i class="fas fa-exclamation-triangle me-1"></i> <strong>Peringatan Potongan Melebihi Batas:</strong> Nominal diskon melebihi batas maksimal potongan yang diizinkan di Master Barang!
               </div>
 
               <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
@@ -700,45 +700,56 @@
             <div class="card p-3">
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
-                  <h5 class="m-0"><i class="fas fa-tags me-2"></i>Master Barang & Rincian HPP Multi-Satuan (Ecer, Dus, Kodi)</h5>
-                  <small class="text-muted">Hulu HPP otomatis dari barang masuk, rincian tampil lengkap di sini.</small>
+                  <h5 class="m-0"><i class="fas fa-tags me-2"></i>Master Barang & Penentuan Batas Maksimal Potongan (Eceran, Dus, Kodi)</h5>
+                  <small class="text-muted">Masukkan nominal potongan pada baris kosong. Sisa laba akan otomatis terhitung dan menjadi batas maksimal di Kasir.</small>
                 </div>
                 <button class="btn btn-primary" onclick="alert('Form Tambah Produk')"><i class="fas fa-plus me-1"></i> Tambah Produk</button>
               </div>
               <div class="table-responsive">
-                <table class="table table-striped align-middle">
-                  <thead>
+                <table class="table table-bordered align-middle">
+                  <thead class="table-secondary">
                     <tr>
-                      <th>Barcode</th>
-                      <th>Nama Produk & Batch</th>
+                      <th>Barcode & Nama Produk</th>
                       <th>Rincian HPP (Ecer / Dus / Kodi)</th>
-                      <th>Harga Jual Reguler (Ecer/Dus/Kodi)</th>
-                      <th>Harga Member (Ecer/Dus/Kodi)</th>
-                      <th>Stok</th>
+                      <th>Harga Jual (Ecer / Dus / Kodi)</th>
+                      <th class="text-success">Nominal Laba Asli (Ecer / Dus / Kodi)</th>
+                      <th class="bg-light text-primary">Input Batas Maksimal Potongan Diskon (Ecer / Dus / Kodi)</th>
+                      <th class="text-danger">Sisa Laba Setelah Diskon (Ecer / Dus / Kodi)</th>
                       <th>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td>8992761001</td>
-                      <td>Minyak Goreng 2L <br><small class="text-secondary">Stok Lama</small></td>
                       <td>
-                        <span class="text-success fw-bold">Ecer:</span> Rp 30.000<br>
-                        <span class="text-primary fw-bold">Dus (24 Pcs):</span> Rp 720.000<br>
-                        <span class="text-info fw-bold">Kodi (20 Pcs):</span> Rp 600.000
+                        <strong>8992761001</strong><br>
+                        Minyak Goreng 2L <br><small class="text-secondary">Stok Lama</small>
                       </td>
                       <td>
-                        <div class="input-group input-group-sm mb-1"><span class="input-group-text">Ecer</span><input type="text" class="form-control" value="34.000"></div>
-                        <div class="input-group input-group-sm mb-1"><span class="input-group-text">Dus</span><input type="text" class="form-control" value="400.000"></div>
-                        <div class="input-group input-group-sm"><span class="input-group-text">Kodi</span><input type="text" class="form-control" value="650.000"></div>
+                        <span class="text-success">Ecer:</span> Rp 30.000<br>
+                        <span class="text-primary">Dus:</span> Rp 720.000<br>
+                        <span class="text-info">Kodi:</span> Rp 600.000
                       </td>
                       <td>
-                        <div class="input-group input-group-sm mb-1"><span class="input-group-text">Ecer</span><input type="text" class="form-control" value="33.000"></div>
-                        <div class="input-group input-group-sm mb-1"><span class="input-group-text">Dus</span><input type="text" class="form-control" value="390.000"></div>
-                        <div class="input-group input-group-sm"><span class="input-group-text">Kodi</span><input type="text" class="form-control" value="630.000"></div>
+                        <div class="input-group input-group-sm mb-1"><span class="input-group-text">Ecer</span><input type="text" class="form-control harga-ecer" value="34.000" readonly></div>
+                        <div class="input-group input-group-sm mb-1"><span class="input-group-text">Dus</span><input type="text" class="form-control harga-dus" value="400.000" readonly></div>
+                        <div class="input-group input-group-sm"><span class="input-group-text">Kodi</span><input type="text" class="form-control harga-kodi" value="650.000" readonly></div>
                       </td>
-                      <td>50</td>
-                      <td><button class="btn btn-success btn-sm w-100" onclick="executeWithProtection('Simpan Harga', () => alert('Harga Master Disimpan!'))"><i class="fas fa-save"></i> Simpan</button></td>
+                      <td>
+                        <span class="text-success fw-bold laba-asli-ecer">Rp 4.000</span><br>
+                        <span class="text-success fw-bold laba-asli-dus">Rp 40.000</span><br>
+                        <span class="text-success fw-bold laba-asli-kodi">Rp 50.000</span>
+                      </td>
+                      <td class="bg-light">
+                        <div class="input-group input-group-sm mb-1"><span class="input-group-text bg-primary text-white">Ecer</span><input type="number" class="form-control border-primary input-potong-ecer" value="4000" placeholder="0" oninput="hitungSisaLabaMaster(this)"></div>
+                        <div class="input-group input-group-sm mb-1"><span class="input-group-text bg-primary text-white">Dus</span><input type="number" class="form-control border-primary input-potong-dus" value="35000" placeholder="0" oninput="hitungSisaLabaMaster(this)"></div>
+                        <div class="input-group input-group-sm"><span class="input-group-text bg-primary text-white">Kodi</span><input type="number" class="form-control border-primary input-potong-kodi" value="50000" placeholder="0" oninput="hitungSisaLabaMaster(this)"></div>
+                      </td>
+                      <td>
+                        <span class="text-danger fw-bold sisa-laba-ecer">Rp 0</span><br>
+                        <span class="text-danger fw-bold sisa-laba-dus">Rp 5.000</span><br>
+                        <span class="text-danger fw-bold sisa-laba-kodi">Rp 0</span>
+                      </td>
+                      <td><button class="btn btn-success btn-sm w-100 py-2" onclick="executeWithProtection('Simpan Batas Potongan', () => alert('Batas Maksimal Potongan Diskon Berhasil Disimpan & Menjadi Panduan Kasir!'))"><i class="fas fa-save me-1"></i> Simpan</button></td>
                     </tr>
                   </tbody>
                 </table>
@@ -1270,6 +1281,52 @@
       }
     }
 
+    /* FUNGSI HITUNG SISA LABA PADA MENU MASTER BARANG */
+    function hitungSisaLabaMaster(inputEl) {
+      const row = inputEl.closest('tr');
+      if (!row) return;
+
+      const labaEcerAsli = 4000;
+      const labaDusAsli = 40000;
+      const labaKodiAsli = 50000;
+
+      const potEcer = parseFloat(row.querySelector('.input-potong-ecer')?.value) || 0;
+      const potDus = parseFloat(row.querySelector('.input-potong-dus')?.value) || 0;
+      const potKodi = parseFloat(row.querySelector('.input-potong-kodi')?.value) || 0;
+
+      let sisaEcer = labaEcerAsli - potEcer;
+      let sisaDus = labaDusAsli - potDus;
+      let sisaKodi = labaKodiAsli - potKodi;
+
+      row.querySelector('.sisa-laba-ecer').innerText = "Rp " + sisaEcer.toLocaleString('id-ID');
+      row.querySelector('.sisa-laba-dus').innerText = "Rp " + sisaDus.toLocaleString('id-ID');
+      row.querySelector('.sisa-laba-kodi').innerText = "Rp " + sisaKodi.toLocaleString('id-ID');
+    }
+
+    /* FUNGSI VALIDASI DISKON MAKSIMAL DI KASIR */
+    function validasiDiskonMaksimal(inputEl) {
+      const row = inputEl.closest('tr');
+      if (!row) return;
+
+      const satuanSelect = row.querySelector('.satuan-select');
+      const selectedOpt = satuanSelect?.options[satuanSelect.selectedIndex];
+      const maxDiskon = parseFloat(selectedOpt?.getAttribute('data-max-diskon')) || 4000;
+
+      const diskonVal = parseFloat(inputEl.value) || 0;
+      const warningEl = document.getElementById('diskon-warning');
+
+      if (diskonVal > maxDiskon) {
+        if (warningEl) {
+          warningEl.style.display = 'block';
+          warningEl.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i> <strong>Peringatan Potongan Melebihi Batas:</strong> Potongan Rp ${diskonVal.toLocaleString('id-ID')} melebihi batas maksimal yang diizinkan (Rp ${maxDiskon.toLocaleString('id-ID')})!`;
+        }
+        inputEl.classList.add('is-invalid');
+      } else {
+        if (warningEl) warningEl.style.display = 'none';
+        inputEl.classList.remove('is-invalid');
+      }
+    }
+
     /* FUNGSI GRAFIK & LOGIKA FILTER DASHBOARD TREND SUMBU-X OTOMATIS */
     let salesChartInstance = null;
     let profitChartInstance = null;
@@ -1464,7 +1521,7 @@
         totalQty += qty;
       });
 
-      const maxPerA4 = 40; // Kapasitas standar 1 lembar A4
+      const maxPerA4 = 40;
       let totalLembar = Math.ceil(totalQty / maxPerA4);
       if (totalLembar < 1 && totalQty > 0) totalLembar = 1;
 
@@ -1698,6 +1755,7 @@
       let namaProduk = "";
       let badgeHtml = "";
       let eceran = 34000, dus = 400000, kodi = 650000;
+      let maxEcer = 4000, maxDus = 35000, maxKodi = 50000;
 
       if(val === 'minyak-lama') {
         namaProduk = "Minyak Goreng 2L";
@@ -1710,6 +1768,7 @@
         namaProduk = "Keripik Tempe Bu Siti";
         badgeHtml = '<span class="badge bg-info text-dark">Konsinyasi</span>';
         eceran = 10000; dus = 110000; kodi = 190000;
+        maxEcer = 1500; maxDus = 10000; maxKodi = 20000;
       }
 
       const newRow = document.createElement('tr');
@@ -1717,13 +1776,13 @@
         <td>${namaProduk}<br>${badgeHtml}</td>
         <td>
           <select class="form-select form-select-sm satuan-select" onchange="hitungTotalBelanja()">
-            <option value="${eceran}">Eceran / Pcs (Rp ${eceran.toLocaleString('id-ID')})</option>
-            <option value="${dus}">Dus (Rp ${dus.toLocaleString('id-ID')})</option>
-            <option value="${kodi}">Kodi (Rp ${kodi.toLocaleString('id-ID')})</option>
+            <option value="${eceran}" data-max-diskon="${maxEcer}">Eceran / Pcs (Rp ${eceran.toLocaleString('id-ID')})</option>
+            <option value="${dus}" data-max-diskon="${maxDus}">Dus (Rp ${dus.toLocaleString('id-ID')})</option>
+            <option value="${kodi}" data-max-diskon="${maxKodi}">Kodi (Rp ${kodi.toLocaleString('id-ID')})</option>
           </select>
         </td>
         <td><input type="number" class="form-control form-control-sm qty-input" value="1" style="width: 70px;" oninput="hitungTotalBelanja()"></td>
-        <td><input type="number" class="form-control form-control-sm diskon-input" value="0" placeholder="0" oninput="validasiDiskonLaba(this, 3000); hitungTotalBelanja();"></td>
+        <td><input type="number" class="form-control form-control-sm diskon-input" value="0" placeholder="0" oninput="validasiDiskonMaksimal(this); hitungTotalBelanja();"></td>
         <td class="fw-bold text-success subtotal-text">Rp ${eceran.toLocaleString('id-ID')}</td>
         <td class="text-center">
           <button class="btn btn-outline-danger btn-sm" onclick="hapusBarisItem(this)" title="Hapus Item Ini"><i class="fas fa-trash-alt"></i></button>
@@ -1785,14 +1844,25 @@
       if(grandTotalEl) grandTotalEl.innerText = "Rp " + Math.round(grandTotal).toLocaleString('id-ID');
     }
 
-    function validasiDiskonLaba(inputEl, minLaba) {
+    function validasiDiskonMaksimal(inputEl) {
+      const row = inputEl.closest('tr');
+      if (!row) return;
+
+      const satuanSelect = row.querySelector('.satuan-select');
+      const selectedOpt = satuanSelect?.options[satuanSelect.selectedIndex];
+      const maxDiskon = parseFloat(selectedOpt?.getAttribute('data-max-diskon')) || 4000;
+
       const diskonVal = parseFloat(inputEl.value) || 0;
       const warningEl = document.getElementById('diskon-warning');
-      if (diskonVal > 1000) {
-        if(warningEl) warningEl.style.display = 'block';
+
+      if (diskonVal > maxDiskon) {
+        if (warningEl) {
+          warningEl.style.display = 'block';
+          warningEl.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i> <strong>Peringatan Potongan Melebihi Batas:</strong> Potongan Rp ${diskonVal.toLocaleString('id-ID')} melebihi batas maksimal yang diizinkan (Rp ${maxDiskon.toLocaleString('id-ID')})!`;
+        }
         inputEl.classList.add('is-invalid');
       } else {
-        if(warningEl) warningEl.style.display = 'none';
+        if (warningEl) warningEl.style.display = 'none';
         inputEl.classList.remove('is-invalid');
       }
     }
