@@ -166,8 +166,8 @@
     let loginFailAttempt = 0;
 
     const titles = {
-      'dashboard': 'Dashboard Keuangan (Rentang Waktu & Sumbu-X Otomatis Harian/Mingguan/Bulanan/Tahunan)',
-      'kasir': 'Kasir Penjualan (Batal/Hapus Transaksi & FIFO Stok)',
+      'dashboard': 'Dashboard Keuangan (Akumulasi Piutang, Hutang, Konsinyasi & Tempo Realtime)',
+      'kasir': 'Kasir Penjualan (Entertaint, Potong Gaji HRD & Tempo Realtime)',
       'riwayat': 'Riwayat Nota Transaksi',
       'stok': 'Stok Barang & Opname Deviasi',
       'barang-masuk': 'Barang Masuk / Kulakan Baru (Multi-Satuan & HPP Konversi)',
@@ -307,7 +307,35 @@
               <div class="col-md-3"><div class="card card-metric bg-success p-3"><small>Laba Bersih Bulan Ini</small><h3 class="m-0">Rp 12.450.000</h3><small class="text-white-50">(Laba Kotor - Gaji - Ops)</small></div></div>
               <div class="col-md-3"><div class="card card-metric bg-warning text-dark p-3"><small>Piutang Kopkar (Akumulasi)</small><h3 class="m-0">Rp 8.750.000</h3><small class="text-muted">Potong Gaji Belum Lunas</small></div></div>
               <div class="col-md-3"><div class="card card-metric bg-danger p-3"><small>Hutang Kopkar / Overpay BNI</small><h3 class="m-0">Rp 1.200.000</h3><small class="text-white-50">Kelebihan Bayar Direct</small></div></div>
-              <div class="col-md-3"><div class="card card-metric bg-info text-dark p-3"><small>Aset Barang Konsinyasi</small><h3 class="m-0">Rp 15.300.000</h3><small class="text-muted">Total HPP Konsinyasi Ter-update</small></div></div>
+              <div class="col-md-3"><div class="card card-metric bg-info text-dark p-3"><small>Aset Barang Konsinyasi</small><h3 class="m-0" id="dash-konsinyasi-val">Rp 15.300.000</h3><small class="text-muted" id="dash-konsinyasi-status">Belum Lunas</small></div></div>
+            </div>
+
+            <!-- Panel Akumulasi Realtime Penjualan Tempo & Entertaint -->
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <div class="card p-3 border-0 shadow-sm bg-white border-start border-primary border-4">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <small class="text-muted fw-bold">TOTAL PIUTANG PENJUALAN TEMPO (REALTIME)</small>
+                      <h4 class="text-primary fw-bold m-0" id="dash-tempo-total">Rp 1.500.000</h4>
+                    </div>
+                    <span class="badge bg-warning text-dark fs-6" id="dash-tempo-status">Belum Lunas</span>
+                  </div>
+                  <small class="text-muted mt-1">Akumulasi dari transaksi kasir kategori tempo.</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card p-3 border-0 shadow-sm bg-white border-start border-warning border-4">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <small class="text-muted fw-bold">BIAYA ENTERTAINT (MASUK OPERASIONAL)</small>
+                      <h4 class="text-warning text-dark fw-bold m-0" id="dash-entertaint-total">Rp 34.000</h4>
+                    </div>
+                    <span class="badge bg-success">Tercatat di Ops</span>
+                  </div>
+                  <small class="text-muted mt-1">Otomatis terakumulasi dari kasir kategori entertaint.</small>
+                </div>
+              </div>
             </div>
 
             <!-- Panel Control Filter Utama Dashboard -->
@@ -447,7 +475,7 @@
                 </div>
                 <div class="col-md-4">
                   <label class="form-label fw-bold">Kategori Pembayaran:</label>
-                  <select class="form-select" id="metode-bayar" onchange="checkMetodeBayar(this.value)">
+                  <select class="form-select border-success" id="metode-bayar" onchange="checkMetodeBayar(this.value)">
                     <option value="tunai">Tunai (Kas Laci)</option>
                     <option value="qris-bni">QRIS BNI</option>
                     <option value="bni-direct">BNI Direct / Transfer BNI</option>
@@ -455,9 +483,41 @@
                     <option value="mybca">myBCA</option>
                     <option value="livin-mandiri">Livin' by Mandiri</option>
                     <option value="flip">Flip</option>
+                    <option value="entertaint" class="text-warning fw-bold">✨ Entertaint (Pembelian Gratis - Masuk Ops)</option>
                     <option value="potong-gaji">Potong Gaji Bulanan (Cut-Off 16-15)</option>
                     <option value="tempo">Penjualan Tempo (Bebas Waktu)</option>
                   </select>
+                </div>
+              </div>
+
+              <!-- INPUT TAMBAHAN KHUSUS ENTERTAINT -->
+              <div class="row g-2 mb-3 bg-light p-3 rounded border" id="wrapper-entertaint" style="display:none;">
+                <div class="col-md-12">
+                  <label class="form-label fw-bold text-warning"><i class="fas fa-gift me-1"></i> Keterangan / Keperluan Entertaint:</label>
+                  <input type="text" class="form-control" id="ket-entertaint" placeholder="Contoh: Jamuan Tamu Toko / Relasi Bisnis">
+                  <small class="text-muted">Nominal belanja akan otomatis diset <strong>Rp 0 (Gratis untuk pembeli)</strong> dan tercatat otomatis sebagai beban Biaya Operasional Toko.</small>
+                </div>
+              </div>
+
+              <!-- INPUT TAMBAHAN KHUSUS POTONG GAJI -->
+              <div class="row g-2 mb-3 bg-light p-3 rounded border" id="wrapper-potong-gaji" style="display:none;">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-danger"><i class="fas id-badge me-1"></i> No. Registrasi Pegawai:</label>
+                  <input type="text" class="form-control" id="reg-pegawai" placeholder="Contoh: REG-001">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-danger"><i class="fas fa-user me-1"></i> Nama Karyawan:</label>
+                  <input type="text" class="form-control" id="nama-pegawai" placeholder="Nama Karyawan Pemotong Gaji">
+                </div>
+                <div class="col-12"><small class="text-muted">Data ini akan otomatis terecord langsung ke menu <strong>Tagihan Potong Gaji (HRD)</strong>.</small></div>
+              </div>
+
+              <!-- INPUT TAMBAHAN KHUSUS TEMPO -->
+              <div class="row g-2 mb-3 bg-light p-3 rounded border" id="wrapper-tempo" style="display:none;">
+                <div class="col-md-12">
+                  <label class="form-label fw-bold text-primary"><i class="fas fa-file-invoice me-1"></i> Keterangan Instansi / Orang (Tempo):</label>
+                  <input type="text" class="form-control" id="ket-tempo" placeholder="Contoh: Toko Berkah / Bpk. Rudi (Tempo)">
+                  <small class="text-muted">Nominal tempo akan terakumulasi secara real-time dan tampil di <strong>Dashboard Utama</strong>. Status akan otomatis berubah menjadi <strong>Lunas</strong> setelah dilunasi.</small>
                 </div>
               </div>
 
@@ -524,7 +584,7 @@
                 <button class="btn btn-outline-danger btn-lg" onclick="batalHapusSeluruhTransaksi()"><i class="fas fa-trash-restore me-1"></i> Batal / Hapus Transaksi</button>
                 <div class="d-flex align-items-center gap-3">
                   <h4 class="m-0">Total Bayar: <span class="text-success fw-bold" id="grand-total">Rp 34.000</span></h4>
-                  <button class="btn btn-success btn-lg" onclick="executeWithProtection('Transaksi Penjualan', () => alert('Transaksi Berhasil Disimpan!'))"><i class="fas fa-check-circle me-1"></i> Selesaikan Transaksi</button>
+                  <button class="btn btn-success btn-lg" onclick="executeWithProtection('Transaksi Penjualan', () => alert('Transaksi Berhasil Disimpan & Tersinkronisasi!'))"><i class="fas fa-check-circle me-1"></i> Selesaikan Transaksi</button>
                 </div>
               </div>
             </div>`;
@@ -1045,8 +1105,8 @@
             <div class="card p-3 shadow-sm">
               <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <div>
-                  <h5 class="m-0"><i class="fas fa-barcode me-2 text-primary"></i>Generator & Cetak Barcode Produk Minuman (Standar A4)</h5>
-                  <small class="text-muted">Barcode otomatis tampil saat diketik. Ukuran & layout dioptimalkan pas untuk produk minuman dan muat maksimal dalam kertas A4.</small>
+                  <h5 class="m-0"><i class="fas fa-barcode me-2 text-primary"></i>Generator & Cetak Barcode Produk (Standar A4)</h5>
+                  <small class="text-muted">Nama produk otomatis tampil kecil di atas barcode. Kapasitas standar maks <strong>40 barcode per lembar A4</strong>.</small>
                 </div>
                 <div class="d-flex gap-2">
                   <button class="btn btn-primary btn-sm" onclick="tambahBarisBarcode()"><i class="fas fa-plus me-1"></i> Tambah Baris</button>
@@ -1054,14 +1114,24 @@
                 </div>
               </div>
 
+              <!-- INFO KALKULATOR HALAMAN A4 REALTIME -->
+              <div class="alert alert-info py-2 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                  <i class="fas fa-info-circle me-1"></i> Total Barcode akan dicetak: <strong id="info-total-barcode">24 pcs</strong>
+                </div>
+                <div>
+                  <span class="badge bg-primary fs-6" id="info-total-lembar">Estimasi: 1 Lembar A4 (Maks 40/lembar)</span>
+                </div>
+              </div>
+
               <div class="table-responsive">
                 <table class="table table-bordered align-middle">
                   <thead class="table-secondary">
                     <tr>
-                      <th style="width: 28%;">Nama Produk (Tampil di Atas Barcode)</th>
+                      <th style="width: 28%;">Nama Produk (Tampil Kecil di Atas Barcode)</th>
                       <th style="width: 25%;">Kode / No Barcode</th>
                       <th style="width: 15%;">Jumlah Cetak</th>
-                      <th style="width: 24%;" class="text-center">Live Preview Barcode</th>
+                      <th style="width: 24%;" class="text-center">Live Preview Barcode (Ada Nama Produk)</th>
                       <th style="width: 8%;" class="text-center">Aksi</th>
                     </tr>
                   </thead>
@@ -1069,8 +1139,9 @@
                     <tr>
                       <td><input type="text" class="form-control form-control-sm prod-name" value="Teh Botol Sosro 350ml" placeholder="Nama Produk" oninput="updateLiveBarcodes()"></td>
                       <td><input type="text" class="form-control form-control-sm prod-code" value="899276100123" placeholder="Kode Barcode" oninput="updateLiveBarcodes()"></td>
-                      <td><input type="number" class="form-control form-control-sm prod-qty" value="12" min="1" max="100"></td>
+                      <td><input type="number" class="form-control form-control-sm prod-qty" value="12" min="1" max="100" oninput="hitungKalkulasiA4()"></td>
                       <td class="text-center bg-light">
+                        <div style="font-size: 10px; font-weight: bold; color: #333; margin-bottom: 2px;" class="preview-title-label">Teh Botol Sosro 350ml</div>
                         <svg class="barcode-svg" data-code="899276100123"></svg>
                       </td>
                       <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisBarcode(this)"><i class="fas fa-trash"></i></button></td>
@@ -1078,8 +1149,9 @@
                     <tr>
                       <td><input type="text" class="form-control form-control-sm prod-name" value="Aqua 600ml" placeholder="Nama Produk" oninput="updateLiveBarcodes()"></td>
                       <td><input type="text" class="form-control form-control-sm prod-code" value="899138810234" placeholder="Kode Barcode" oninput="updateLiveBarcodes()"></td>
-                      <td><input type="number" class="form-control form-control-sm prod-qty" value="12" min="1" max="100"></td>
+                      <td><input type="number" class="form-control form-control-sm prod-qty" value="12" min="1" max="100" oninput="hitungKalkulasiA4()"></td>
                       <td class="text-center bg-light">
+                        <div style="font-size: 10px; font-weight: bold; color: #333; margin-bottom: 2px;" class="preview-title-label">Aqua 600ml</div>
                         <svg class="barcode-svg" data-code="899138810234"></svg>
                       </td>
                       <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisBarcode(this)"><i class="fas fa-trash"></i></button></td>
@@ -1088,7 +1160,7 @@
                 </table>
               </div>
             </div>`;
-          setTimeout(updateLiveBarcodes, 100);
+          setTimeout(() => { updateLiveBarcodes(); hitungKalkulasiA4(); }, 100);
           break;
 
         case 'pengaturan':
@@ -1230,23 +1302,13 @@
 
       salesChartInstance = new Chart(ctxSales, {
         type: 'bar',
-        data: {
-          labels: [],
-          datasets: [
-            { label: 'Total Omset Penjualan (Rp)', data: [], backgroundColor: '#3b82f6' }
-          ]
-        },
+        data: { labels: [], datasets: [{ label: 'Total Omset Penjualan (Rp)', data: [], backgroundColor: '#3b82f6' }] },
         options: { responsive: true, maintainAspectRatio: false }
       });
 
       profitChartInstance = new Chart(ctxProfit, {
         type: 'line',
-        data: {
-          labels: [],
-          datasets: [
-            { label: 'Total Laba (Rp)', data: [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)', fill: true, tension: 0.3 }
-          ]
-        },
+        data: { labels: [], datasets: [{ label: 'Total Laba (Rp)', data: [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)', fill: true, tension: 0.3 }] },
         options: { responsive: true, maintainAspectRatio: false }
       });
 
@@ -1264,7 +1326,6 @@
       let salesData = [];
       let profitData = [];
 
-      // PEMBUATAN SUMBU-X OTOMATIS SESUAI KATEGORI WAKTU & RENTANG TANGGAL
       if (mode === 'tahunan') {
         const tAwal = parseInt(document.getElementById('tahun-awal')?.value) || 2023;
         const tAkhir = parseInt(document.getElementById('tahun-akhir')?.value) || 2026;
@@ -1277,7 +1338,6 @@
       else if (mode === 'bulanan') {
         const bAwalStr = document.getElementById('bulan-awal')?.value || '2026-01';
         const bAkhirStr = document.getElementById('bulan-akhir')?.value || '2026-10';
-        
         const namaBulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
         let [yStart, mStart] = bAwalStr.split('-').map(Number);
         let [yEnd, mEnd] = bAkhirStr.split('-').map(Number);
@@ -1289,18 +1349,15 @@
           labels.push(`${namaBulan[curM - 1]} ${curY}`);
           salesData.push(11500000 + (count * 600000));
           profitData.push(2300000 + (count * 120000));
-
           curM++;
           if (curM > 12) { curM = 1; curY++; }
           count++;
-          if (count > 120) break; // Pembatas aman
+          if (count > 120) break;
         }
       } 
       else if (mode === 'harian') {
-        // Otomatis menampilkan trend harian tanggal demi tanggal (misal: 1 Jan s/d 2 Feb)
         const dAwal = document.getElementById('tgl-awal')?.value || '2026-01-01';
         const dAkhir = document.getElementById('tgl-akhir')?.value || '2026-02-02';
-        
         let startDate = new Date(dAwal);
         let endDate = new Date(dAkhir);
 
@@ -1309,23 +1366,18 @@
           const dd = String(startDate.getDate()).padStart(2, '0');
           const mm = String(startDate.getMonth() + 1).padStart(2, '0');
           const yy = startDate.getFullYear();
-          
           labels.push(`${dd}/${mm}/${yy}`);
           salesData.push(350000 + (Math.sin(count) * 80000) + (count * 5000));
           profitData.push(70000 + (Math.sin(count) * 15000) + (count * 1000));
-          
           startDate.setDate(startDate.getDate() + 1);
           count++;
         }
       } 
       else if (mode === 'mingguan') {
-        // Otomatis mengelompokkan sumbu-X menjadi per minggu dalam rentang tanggal
         const dAwal = document.getElementById('tgl-awal')?.value || '2026-01-01';
         const dAkhir = document.getElementById('tgl-akhir')?.value || getTodayDate();
-        
         let startDate = new Date(dAwal);
         let endDate = new Date(dAkhir);
-        
         let diffTime = Math.abs(endDate - startDate);
         let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         let totalMinggu = Math.ceil(diffDays / 7);
@@ -1337,59 +1389,56 @@
         }
       }
 
-      // Modifier pengali berdasarkan filter kategori produk masing-masing
-      let multiplierSales = 1.0;
-      if (katPenjualan === 'minuman') multiplierSales = 0.4;
-      else if (katPenjualan === 'obat') multiplierSales = 0.2;
-      else if (katPenjualan === 'atk') multiplierSales = 0.15;
-      else if (katPenjualan === 'sarung') multiplierSales = 0.25;
+      let multiplierSales = (katPenjualan === 'minuman') ? 0.4 : (katPenjualan === 'obat') ? 0.2 : (katPenjualan === 'atk') ? 0.15 : (katPenjualan === 'sarung') ? 0.25 : 1.0;
+      let multiplierProfit = (katLaba === 'minuman') ? 0.4 : (katLaba === 'obat') ? 0.25 : (katLaba === 'atk') ? 0.15 : (katLaba === 'sarung') ? 0.2 : 1.0;
 
-      let multiplierProfit = 1.0;
-      if (katLaba === 'minuman') multiplierProfit = 0.4;
-      else if (katLaba === 'obat') multiplierProfit = 0.25;
-      else if (katLaba === 'atk') multiplierProfit = 0.15;
-      else if (katLaba === 'sarung') multiplierProfit = 0.2;
-
-      // Update Chart Penjualan
       salesChartInstance.data.labels = labels;
-      salesChartInstance.data.datasets[0].label = `Omset Penjualan (${mode.toUpperCase()})`;
       salesChartInstance.data.datasets[0].data = salesData.map(v => Math.round(v * multiplierSales));
       salesChartInstance.update();
 
-      // Update Chart Laba
       profitChartInstance.data.labels = labels;
-      profitChartInstance.data.datasets[0].label = `Total Laba (${mode.toUpperCase()})`;
       profitChartInstance.data.datasets[0].data = profitData.map(v => Math.round(v * multiplierProfit));
       profitChartInstance.update();
     }
 
+    /* LOGIKA KHUSUS MENU CETAK BARCODE (NAMA DI ATAS & KALKULATOR A4) */
     function tambahBarisBarcode() {
       const tbody = document.getElementById('tbody-generator-barcode');
       if (!tbody) return;
       const tr = document.createElement('tr');
       const randomCode = '899' + Math.floor(100000000 + Math.random() * 900000000);
       tr.innerHTML = `
-        <td><input type="text" class="form-control form-control-sm prod-name" value="Produk Minuman Baru" placeholder="Nama Produk" oninput="updateLiveBarcodes()"></td>
+        <td><input type="text" class="form-control form-control-sm prod-name" value="Produk Baru" placeholder="Nama Produk" oninput="updateLiveBarcodes()"></td>
         <td><input type="text" class="form-control form-control-sm prod-code" value="${randomCode}" placeholder="Kode Barcode" oninput="updateLiveBarcodes()"></td>
-        <td><input type="number" class="form-control form-control-sm prod-qty" value="12" min="1" max="100"></td>
+        <td><input type="number" class="form-control form-control-sm prod-qty" value="12" min="1" max="100" oninput="hitungKalkulasiA4()"></td>
         <td class="text-center bg-light">
+          <div style="font-size: 10px; font-weight: bold; color: #333; margin-bottom: 2px;" class="preview-title-label">Produk Baru</div>
           <svg class="barcode-svg" data-code="${randomCode}"></svg>
         </td>
-        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisBarcode(this)"><i class="fas fa-trash"></i></button></td>
+        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBarisBarcode(this); hitungKalkulasiA4();"><i class="fas fa-trash"></i></button></td>
       `;
       tbody.appendChild(tr);
       updateLiveBarcodes();
+      hitungKalkulasiA4();
     }
 
     function hapusBarisBarcode(btn) {
       const tr = btn.closest('tr');
       if (tr) tr.remove();
+      hitungKalkulasiA4();
     }
 
     function updateLiveBarcodes() {
       document.querySelectorAll('#tbody-generator-barcode tr').forEach(tr => {
+        const nameInput = tr.querySelector('.prod-name');
         const codeInput = tr.querySelector('.prod-code');
         const svgEl = tr.querySelector('.barcode-svg');
+        const titleLabel = tr.querySelector('.preview-title-label');
+
+        if (nameInput && titleLabel) {
+          titleLabel.innerText = nameInput.value.trim() || 'Produk';
+        }
+
         if (codeInput && svgEl) {
           const val = codeInput.value.trim() || '0000000000';
           svgEl.setAttribute('data-code', val);
@@ -1397,7 +1446,7 @@
             JsBarcode(svgEl, val, {
               format: "CODE128",
               width: 1.3,
-              height: 35,
+              height: 32,
               displayValue: true,
               fontSize: 10,
               margin: 2
@@ -1405,6 +1454,25 @@
           } catch(e) {}
         }
       });
+      hitungKalkulasiA4();
+    }
+
+    function hitungKalkulasiA4() {
+      let totalQty = 0;
+      document.querySelectorAll('#tbody-generator-barcode tr').forEach(tr => {
+        const qty = parseInt(tr.querySelector('.prod-qty')?.value) || 0;
+        totalQty += qty;
+      });
+
+      const maxPerA4 = 40; // Kapasitas standar 1 lembar A4
+      let totalLembar = Math.ceil(totalQty / maxPerA4);
+      if (totalLembar < 1 && totalQty > 0) totalLembar = 1;
+
+      const infoTotal = document.getElementById('info-total-barcode');
+      const infoLembar = document.getElementById('info-total-lembar');
+
+      if (infoTotal) infoTotal.innerText = `${totalQty} pcs`;
+      if (infoLembar) infoLembar.innerText = `Estimasi: ${totalLembar} Lembar A4 (Maks 40/lembar)`;
     }
 
     function downloadPdfBarcode() {
@@ -1420,20 +1488,20 @@
         try {
           JsBarcode(canvas, codeVal, {
             format: "CODE128",
-            width: 1.5,
-            height: 45,
+            width: 1.4,
+            height: 40,
             displayValue: true,
-            fontSize: 11,
+            fontSize: 10,
             margin: 2
           });
           const dataUrl = canvas.toDataURL('image/png');
           for (let i = 0; i < qtyVal; i++) {
             itemsToPrint.push({
               stack: [
-                { text: nameVal, fontSize: 8, bold: true, alignment: 'center', color: '#333', margin: [0, 0, 0, 2] },
-                { image: dataUrl, width: 120, alignment: 'center' }
+                { text: nameVal, fontSize: 8, bold: true, alignment: 'center', color: '#111', margin: [0, 0, 0, 1] },
+                { image: dataUrl, width: 115, alignment: 'center' }
               ],
-              margin: [5, 5, 5, 5],
+              margin: [4, 4, 4, 4],
               alignment: 'center'
             });
           }
@@ -1451,12 +1519,15 @@
         currentRow.push(item);
         if (currentRow.length === 4 || index === itemsToPrint.length - 1) {
           while (currentRow.length < 4) {
-            currentRow.push({ text: '', margin: [5, 5, 5, 5] });
+            currentRow.push({ text: '', margin: [4, 4, 4, 4] });
           }
           tableBody.push(currentRow);
           currentRow = [];
         }
       });
+
+      const totalLembar = Math.ceil(itemsToPrint.length / 40);
+      alert(`Informasi Cetak: Total ${itemsToPrint.length} barcode akan dicetak menjadi ${totalLembar} lembar A4.`);
 
       const docDefinition = {
         pageOrientation: 'portrait',
@@ -1474,7 +1545,22 @@
         defaultStyle: { font: 'Helvetica' }
       };
 
-      pdfMake.createPdf(docDefinition).download('Barcode_Minuman_LTM_Mart.pdf');
+      pdfMake.createPdf(docDefinition).download(`Barcode_LTM_Mart_${itemsToPrint.length}_Pcs.pdf`);
+    }
+
+    /* LOGIKA KASIR PENJUALAN (ENTERTAINT, POTONG GAJI & TEMPO) */
+    function checkMetodeBayar(val) {
+      const wEntertaint = document.getElementById('wrapper-entertaint');
+      const wPotongGaji = document.getElementById('wrapper-potong-gaji');
+      const wTempo = document.getElementById('wrapper-tempo');
+
+      if (wEntertaint) wEntertaint.style.display = (val === 'entertaint') ? 'flex' : 'none';
+      if (wPotongGaji) wPotongGaji.style.display = (val === 'potong-gaji') ? 'flex' : 'none';
+      if (wTempo) wTempo.style.display = (val === 'tempo') ? 'flex' : 'none';
+
+      if (val === 'entertaint') {
+        alert("Mode Entertaint Aktif: Total belanja otomatis diset Rp 0 dan tercatat sebagai Biaya Operasional.");
+      }
     }
 
     let userRowCounter = 2;
@@ -1586,26 +1672,18 @@
       const adminWrapper = document.getElementById('wrapper-biaya-admin');
       const manualWrapper = document.getElementById('wrapper-ket-manual');
 
-      if (adminWrapper) {
-        adminWrapper.style.display = (val === 'tarik-tunai') ? 'block' : 'none';
-      }
-      if (manualWrapper) {
-        manualWrapper.style.display = (val === 'lainnya') ? 'block' : 'none';
-      }
+      if (adminWrapper) adminWrapper.style.display = (val === 'tarik-tunai') ? 'block' : 'none';
+      if (manualWrapper) manualWrapper.style.display = (val === 'lainnya') ? 'block' : 'none';
     }
 
     function hitungOtomatisBayarKonsinyasi() {
       const checkboxes = document.querySelectorAll('.chk-tagihan');
       let total = 0;
       checkboxes.forEach(chk => {
-        if (chk.checked) {
-          total += parseFloat(chk.value) || 0;
-        }
+        if (chk.checked) total += parseFloat(chk.value) || 0;
       });
       const textEl = document.getElementById('total-bayar-konsinyasi');
-      if (textEl) {
-        textEl.innerText = "Rp " + Math.round(total).toLocaleString('id-ID');
-      }
+      if (textEl) textEl.innerText = "Rp " + Math.round(total).toLocaleString('id-ID');
     }
 
     function filterTagihanSupplier(supId) {
@@ -1674,6 +1752,13 @@
     }
 
     function hitungTotalBelanja() {
+      const metodeBayar = document.getElementById('metode-bayar')?.value;
+      if (metodeBayar === 'entertaint') {
+        const grandTotalEl = document.getElementById('grand-total');
+        if(grandTotalEl) grandTotalEl.innerText = "Rp 0 (Gratis - Masuk Ops)";
+        return;
+      }
+
       const rows = document.querySelectorAll('#cart-tbody tr');
       let grandTotal = 0;
 
@@ -1730,9 +1815,7 @@
       const pcsPerKemasan = parseFloat(document.getElementById('qty-per-kemasan')?.value) || 1;
 
       let totalPcs = qtyMasuk;
-      if (satuan === 'dus' || satuan === 'kodi') {
-        totalPcs = qtyMasuk * pcsPerKemasan;
-      }
+      if (satuan === 'dus' || satuan === 'kodi') totalPcs = qtyMasuk * pcsPerKemasan;
 
       let hppPcs = (totalPcs > 0 && totalNominal > 0) ? (totalNominal / totalPcs) : 0;
       let hppDus = hppPcs * (satuan === 'dus' ? pcsPerKemasan : 24);
@@ -1742,11 +1825,6 @@
       if (textEl) {
         textEl.innerText = `Ecer: Rp ${Math.round(hppPcs).toLocaleString('id-ID')} | Dus: Rp ${Math.round(hppDus).toLocaleString('id-ID')} | Kodi: Rp ${Math.round(hppKodi).toLocaleString('id-ID')}`;
       }
-    }
-
-    function checkMetodeBayar(val) {
-      const info = document.getElementById('potong-gaji-info');
-      if(info) info.style.display = (val === 'potong-gaji') ? 'block' : 'none';
     }
 
     function setBarcode(val) { document.getElementById('barcode-input').value = val; }
