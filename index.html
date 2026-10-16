@@ -63,6 +63,7 @@
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('mutasi', event)"><i class="fas fa-university"></i> Mutasi Rekening</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('saldo-awal', event)"><i class="fas fa-wallet"></i> Saldo Awal</a></li>
       <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('cetak-barcode', event)"><i class="fas fa-barcode"></i> Cetak Barcode</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="switchMenu('pengaturan', event)"><i class="fas fa-cogs text-warning"></i> Pengaturan Sistem</a></li>
     </ul>
   </div>
 
@@ -91,12 +92,12 @@
       </div>
     </div>
 
-    <!-- Modal Switch Login -->
+    <!-- Modal Switch Login dengan Fitur Show/Hide Password & Reset Password -->
     <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title"><i class="fas fa-user-lock me-2"></i>Switch Login Pengguna</h5>
+            <h5 class="modal-title"><i class="fas fa-user-lock me-2"></i>Login & Keamanan Sistem</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
@@ -110,13 +111,22 @@
               </select>
             </div>
             <div class="mb-3">
-              <label class="form-label fw-bold">PIN Akses / Passcode:</label>
-              <input type="password" class="form-control form-control-lg" id="user-pin" placeholder="Masukkan PIN" value="1234">
+              <label class="form-label fw-bold">Password / PIN Akses:</label>
+              <div class="input-group">
+                <input type="password" class="form-control form-control-lg" id="user-pin" placeholder="Masukkan Password" value="1234">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()"><i class="fas fa-eye" id="eye-icon"></i></button>
+              </div>
+              <div class="form-text text-danger small" id="login-warning-text" style="display:none;">
+                <i class="fas fa-exclamation-triangle me-1"></i> Password salah! Percobaan ke-<span id="fail-count">1</span> dari 3. Jika salah 3x, password akan di-reset otomatis menjadi <strong>123456</strong>.
+              </div>
+            </div>
+            <div class="text-end mb-2">
+              <a href="#" class="text-decoration-none small text-primary fw-bold" onclick="triggerResetPassword()"><i class="fas fa-key me-1"></i> Lupa Password / Reset Password</a>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="button" class="btn btn-primary" onclick="confirmSwitchLogin()"><i class="fas fa-sign-in-alt me-1"></i> Masuk</button>
+            <button type="button" class="btn btn-primary px-4" onclick="confirmSwitchLogin()"><i class="fas fa-sign-in-alt me-1"></i> Masuk</button>
           </div>
         </div>
       </div>
@@ -147,9 +157,10 @@
   <script>
     let activeScanCallback = null;
     let videoStream = null;
+    let loginFailAttempt = 0;
 
     const titles = {
-      'dashboard': 'Dashboard Keuangan',
+      'dashboard': 'Dashboard Keuangan (Trend Penjualan & Laba per Kategori)',
       'kasir': 'Kasir Penjualan (Batal/Hapus Transaksi & FIFO Stok)',
       'riwayat': 'Riwayat Nota Transaksi',
       'stok': 'Stok Barang & Opname Deviasi',
@@ -162,7 +173,8 @@
       'gaji': 'Pembayaran Gaji Pegawai & Potong Gaji HRD',
       'mutasi': 'Mutasi Rekening & Pelunasan BNI Direct (Overpay)',
       'saldo-awal': 'Saldo Awal Akuntansi Terperinci',
-      'cetak-barcode': 'Cetak Barcode Produk'
+      'cetak-barcode': 'Cetak Barcode Produk',
+      'pengaturan': 'Pengaturan Sistem (Manajemen User & Pos Rekening)'
     };
 
     function getTodayDate() {
@@ -195,13 +207,48 @@
       modal.show();
     }
 
+    function togglePasswordVisibility() {
+      const pinInput = document.getElementById('user-pin');
+      const eyeIcon = document.getElementById('eye-icon');
+      if (pinInput.type === 'password') {
+        pinInput.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+      } else {
+        pinInput.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+      }
+    }
+
+    function triggerResetPassword() {
+      loginFailAttempt = 0;
+      document.getElementById('user-pin').value = '123456';
+      alert("NOTIFIKASI KEAMANAN: Password berhasil di-reset oleh sistem menjadi: 123456");
+      const warningEl = document.getElementById('login-warning-text');
+      if (warningEl) warningEl.style.display = 'none';
+    }
+
     function confirmSwitchLogin() {
-      const userVal = document.getElementById('select-user').value.split('|');
-      document.getElementById('current-username').innerText = userVal[0];
-      document.getElementById('current-role').innerText = userVal[1];
-      const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
-      if (modal) modal.hide();
-      alert(`Berhasil login sebagai: ${userVal[0]} (${userVal[1]})`);
+      const pin = document.getElementById('user-pin').value;
+      if (pin === '1234' || pin === '123456' || pin === 'admin') {
+        const userVal = document.getElementById('select-user').value.split('|');
+        document.getElementById('current-username').innerText = userVal[0];
+        document.getElementById('current-role').innerText = userVal[1];
+        const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+        if (modal) modal.hide();
+        loginFailAttempt = 0;
+        alert(`Berhasil login sebagai: ${userVal[0]} (${userVal[1]})`);
+      } else {
+        loginFailAttempt++;
+        const warningEl = document.getElementById('login-warning-text');
+        document.getElementById('fail-count').innerText = loginFailAttempt;
+        if (warningEl) warningEl.style.display = 'block';
+
+        if (loginFailAttempt >= 3) {
+          triggerResetPassword();
+        }
+      }
     }
 
     function logoutApp() {
@@ -246,25 +293,36 @@
               <div class="col-md-3"><div class="card card-metric bg-danger p-3"><small>Hutang Kopkar / Overpay BNI</small><h3 class="m-0">Rp 1.200.000</h3><small class="text-white-50">Kelebihan Bayar Direct</small></div></div>
               <div class="col-md-3"><div class="card card-metric bg-info text-dark p-3"><small>Aset Barang Konsinyasi</small><h3 class="m-0">Rp 15.300.000</h3><small class="text-muted">Total HPP Konsinyasi Ter-update</small></div></div>
             </div>
-            <div class="card p-3 mb-4">
-              <h5 class="mb-3"><i class="fas fa-wallet me-2 text-primary"></i>Posisi Saldo Keuangan Per Pos Rekening</h5>
-              <div class="row g-3">
-                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">Tunai (Kas Laci)</small><h5 class="fw-bold m-0 text-dark">Rp 3.500.000</h5></div></div>
-                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">BNI Direct / Transfer BNI</small><h5 class="fw-bold m-0 text-primary">Rp 14.200.000</h5></div></div>
-                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">QRIS BNI</small><h5 class="fw-bold m-0 text-success">Rp 2.850.000</h5></div></div>
-                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">wondr by BNI</small><h5 class="fw-bold m-0 text-info">Rp 4.100.000</h5></div></div>
-                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">myBCA</small><h5 class="fw-bold m-0 text-primary">Rp 6.300.000</h5></div></div>
-                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">Livin' by Mandiri</small><h5 class="fw-bold m-0 text-warning text-dark">Rp 5.200.000</h5></div></div>
-                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">Flip</small><h5 class="fw-bold m-0 text-secondary">Rp 1.500.000</h5></div></div>
-                <div class="col-md-3"><div class="p-3 border rounded bg-light"><small class="text-muted">Kas Kopkar</small><h5 class="fw-bold m-0 text-danger">Rp 9.800.000</h5></div></div>
+
+            <!-- Filter Periode Trend -->
+            <div class="card p-3 mb-3 bg-white shadow-sm">
+              <div class="row g-2 align-items-center">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold small m-0">Pilih Periode Analisis Trend:</label>
+                  <select class="form-select form-select-sm" id="filter-periode-trend" onchange="updateDashboardCharts()">
+                    <option value="bulanan">Bulanan (Bulan Kemarin vs Minggu Berjalan)</option>
+                    <option value="tahunan">Tahunan (Perbandingan Antar Tahun)</option>
+                  </select>
+                </div>
               </div>
             </div>
-            <div class="card p-3 mb-4">
-              <h5><i class="fas fa-chart-line me-2"></i>Trend Penjualan & Pergerakan Profit Bulanan</h5>
-              <canvas id="profitChart" style="max-height: 280px;"></canvas>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="card p-3 mb-4 shadow-sm">
+                  <h5 class="mb-3"><i class="fas fa-chart-bar me-2 text-primary"></i>Trend Penjualan per Kategori</h5>
+                  <canvas id="salesCategoryChart" style="max-height: 280px;"></canvas>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card p-3 mb-4 shadow-sm">
+                  <h5 class="mb-3"><i class="fas fa-chart-line me-2 text-success"></i>Trend Laba per Kategori</h5>
+                  <canvas id="profitCategoryChart" style="max-height: 280px;"></canvas>
+                </div>
+              </div>
             </div>
           `;
-          initChart();
+          initDashboardCharts();
           break;
 
         case 'kasir':
@@ -889,10 +947,202 @@
             </div>`;
           break;
 
+        case 'pengaturan':
+          container.innerHTML = `
+            <div class="row g-3">
+              <!-- Pengaturan Login User -->
+              <div class="col-md-6">
+                <div class="card p-3 shadow-sm h-100">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0"><i class="fas fa-users-cog me-2 text-primary"></i>Manajemen Akun Login</h5>
+                    <button class="btn btn-primary btn-sm" onclick="tambahBarisUser()"><i class="fas fa-plus me-1"></i> Tambah User</button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                      <thead class="table-secondary">
+                        <tr>
+                          <th>Username</th>
+                          <th>Role</th>
+                          <th>Password</th>
+                          <th class="text-center" style="width: 70px;">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbody-users">
+                        <tr>
+                          <td><input type="text" class="form-control form-control-sm" value="Suwarsono"></td>
+                          <td>
+                            <select class="form-select form-select-sm">
+                              <option value="Owner" selected>Owner</option>
+                              <option value="Admin">Admin</option>
+                              <option value="Kasir">Kasir</option>
+                            </select>
+                          </td>
+                          <td><input type="password" class="form-control form-control-sm" value="1234"></td>
+                          <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                        <tr>
+                          <td><input type="text" class="form-control form-control-sm" value="Kasir Shift 1"></td>
+                          <td>
+                            <select class="form-select form-select-sm">
+                              <option value="Owner">Owner</option>
+                              <option value="Admin">Admin</option>
+                              <option value="Kasir" selected>Kasir</option>
+                            </select>
+                          </td>
+                          <td><input type="password" class="form-control form-control-sm" value="1234"></td>
+                          <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <button class="btn btn-success mt-3" onclick="executeWithProtection('Simpan User', () => alert('Daftar Akun Login Berhasil Diperbarui!'))"><i class="fas fa-save me-1"></i> Simpan Perubahan User</button>
+                </div>
+              </div>
+
+              <!-- Pengaturan Pos Rekening -->
+              <div class="col-md-6">
+                <div class="card p-3 shadow-sm h-100">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0"><i class="fas fa-university me-2 text-success"></i>Manajemen Pos Rekening</h5>
+                    <button class="btn btn-success btn-sm" onclick="tambahBarisRekening()"><i class="fas fa-plus me-1"></i> Tambah Rekening</button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                      <thead class="table-secondary">
+                        <tr>
+                          <th>Nama Akun / Pos Rekening</th>
+                          <th>Tipe / Keterangan</th>
+                          <th class="text-center" style="width: 70px;">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbody-rekening">
+                        <tr>
+                          <td><input type="text" class="form-control form-control-sm" value="Tunai (Kas Laci)"></td>
+                          <td><input type="text" class="form-control form-control-sm" value="Kas Fisik"></td>
+                          <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                        <tr>
+                          <td><input type="text" class="form-control form-control-sm" value="BNI Direct"></td>
+                          <td><input type="text" class="form-control form-control-sm" value="Bank Korporat"></td>
+                          <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                        <tr>
+                          <td><input type="text" class="form-control form-control-sm" value="QRIS BNI"></td>
+                          <td><input type="text" class="form-control form-control-sm" value="Digital Payment"></td>
+                          <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <button class="btn btn-success mt-3" onclick="executeWithProtection('Simpan Rekening', () => alert('Daftar Pos Rekening Berhasil Diperbarui!'))"><i class="fas fa-save me-1"></i> Simpan Perubahan Rekening</button>
+                </div>
+              </div>
+            </div>`;
+          break;
+
         default:
           container.innerHTML = `<div class="card p-4 text-center"><h5>Menu ${titles[menu] || menu} Aktif</h5></div>`;
           break;
       }
+    }
+
+    function tambahBarisUser() {
+      const tbody = document.getElementById('tbody-users');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" class="form-control form-control-sm" placeholder="Username baru"></td>
+        <td>
+          <select class="form-select form-select-sm">
+            <option value="Owner">Owner</option>
+            <option value="Admin">Admin</option>
+            <option value="Kasir" selected>Kasir</option>
+          </select>
+        </td>
+        <td><input type="password" class="form-control form-control-sm" placeholder="Password"></td>
+        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function tambahBarisRekening() {
+      const tbody = document.getElementById('tbody-rekening');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" class="form-control form-control-sm" placeholder="Nama Akun Rekening"></td>
+        <td><input type="text" class="form-control form-control-sm" placeholder="Keterangan"></td>
+        <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)"><i class="fas fa-trash"></i></button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function hapusBaris(btn) {
+      const tr = btn.closest('tr');
+      if (tr) tr.remove();
+    }
+
+    let salesChartInstance = null;
+    let profitChartInstance = null;
+
+    function initDashboardCharts() {
+      const ctxSales = document.getElementById('salesCategoryChart');
+      const ctxProfit = document.getElementById('profitCategoryChart');
+      if(!ctxSales || !ctxProfit) return;
+
+      const categories = ['Minuman & Snack', 'Obat', 'ATK', 'Sarung & Bamus'];
+
+      salesChartInstance = new Chart(ctxSales, {
+        type: 'bar',
+        data: {
+          labels: categories,
+          datasets: [
+            { label: 'Bulan Kemarin', data: [12000000, 4500000, 3200000, 8500000], backgroundColor: '#3b82f6' },
+            { label: 'Minggu Berjalan', data: [3500000, 1200000, 950000, 2400000], backgroundColor: '#10b981' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      profitChartInstance = new Chart(ctxProfit, {
+        type: 'line',
+        data: {
+          labels: categories,
+          datasets: [
+            { label: 'Laba Bulan Kemarin', data: [2400000, 900000, 640000, 1700000], borderColor: '#3b82f6', fill: false },
+            { label: 'Laba Minggu Berjalan', data: [700000, 240000, 190000, 480000], borderColor: '#10b981', fill: false }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function updateDashboardCharts() {
+      const filter = document.getElementById('filter-periode-trend')?.value;
+      if (!salesChartInstance || !profitChartInstance) return;
+
+      if (filter === 'tahunan') {
+        salesChartInstance.data.datasets[0].label = 'Tahun 2025';
+        salesChartInstance.data.datasets[0].data = [145000000, 52000000, 38000000, 95000000];
+        salesChartInstance.data.datasets[1].label = 'Tahun 2026 (YTD)';
+        salesChartInstance.data.datasets[1].data = [160000000, 58000000, 42000000, 110000000];
+
+        profitChartInstance.data.datasets[0].label = 'Laba Tahun 2025';
+        profitChartInstance.data.datasets[0].data = [29000000, 10400000, 7600000, 19000000];
+        profitChartInstance.data.datasets[1].label = 'Laba Tahun 2026 (YTD)';
+        profitChartInstance.data.datasets[1].data = [32000000, 11600000, 8400000, 22000000];
+      } else {
+        salesChartInstance.data.datasets[0].label = 'Bulan Kemarin';
+        salesChartInstance.data.datasets[0].data = [12000000, 4500000, 3200000, 8500000];
+        salesChartInstance.data.datasets[1].label = 'Minggu Berjalan';
+        salesChartInstance.data.datasets[1].data = [3500000, 1200000, 950000, 2400000];
+
+        profitChartInstance.data.datasets[0].label = 'Laba Bulan Kemarin';
+        profitChartInstance.data.datasets[0].data = [2400000, 900000, 640000, 1700000];
+        profitChartInstance.data.datasets[1].label = 'Laba Minggu Berjalan';
+        profitChartInstance.data.datasets[1].data = [700000, 240000, 190000, 480000];
+      }
+
+      salesChartInstance.update();
+      profitChartInstance.update();
     }
 
     function toggleFormOps(val) {
@@ -1125,22 +1375,6 @@
     }
 
     function setBarcode(val) { document.getElementById('barcode-input').value = val; }
-
-    function initChart() {
-      const ctx = document.getElementById('profitChart');
-      if(!ctx) return;
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: ['Agt', 'Sep', 'Okt', 'Nov', 'Des', 'Jan'],
-          datasets: [
-            { label: 'Penjualan Kotor (Rp)', data: [45000000, 52000000, 48000000, 58000000, 62000000, 68000000], borderColor: '#3b82f6', fill: false },
-            { label: 'Laba Bersih (Rp)', data: [8000000, 9500000, 8800000, 10200000, 11000000, 12450000], borderColor: '#10b981', fill: false }
-          ]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
-    }
 
     function initOpsTrendChart() {
       const ctx = document.getElementById('opsTrendChart');
