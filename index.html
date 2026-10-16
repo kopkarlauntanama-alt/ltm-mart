@@ -153,8 +153,8 @@
       'kasir': 'Kasir Penjualan (Batal/Hapus Transaksi & FIFO Stok)',
       'riwayat': 'Riwayat Nota Transaksi',
       'stok': 'Stok Barang & Opname Deviasi',
-      'barang-masuk': 'Barang Masuk / Kulakan Baru',
-      'master': 'Master Barang & Harga',
+      'barang-masuk': 'Barang Masuk / Kulakan Baru (Multi-Satuan & HPP Konversi)',
+      'master': 'Master Barang & Harga (Rincian HPP Eceran, Dus, Kodi)',
       'konsinyasi': 'Laporan Barang Konsinyasi (Export .XLSX Supplier)',
       'bayar-konsinyasi': 'Pembayaran Tagihan Konsinyasi',
       'pemasukan': 'Pemasukan Luar / Tarik Tunai & Fee CV',
@@ -286,7 +286,6 @@
                 </div>
               </div>
 
-              <!-- Input Barcode ATAU Pilih Nama Produk -->
               <div class="row g-2 mb-3">
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Scan Barcode / Kode Produk:</label>
@@ -395,16 +394,19 @@
         case 'barang-masuk':
           container.innerHTML = `
             <div class="card p-3">
-              <h5><i class="fas fa-box-open me-2"></i>Input Barang Masuk / Kulakan (Auto-Register & Auto-HPP)</h5>
+              <h5><i class="fas fa-box-open me-2"></i>Input Barang Masuk / Kulakan (Multi-Satuan & Konversi HPP)</h5>
               <div class="row g-3 mt-1">
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Barcode / Kode Produk:</label>
                   <div class="input-group">
-                    <input type="text" id="masuk-barcode" class="form-control" placeholder="Scan Barcode / Ketik Kode Produk Baru">
+                    <input type="text" id="masuk-barcode" class="form-control" placeholder="Scan Barcode / Ketik Kode Produk">
                     <button class="btn btn-primary" onclick="startCamera(val => document.getElementById('masuk-barcode').value = val)"><i class="fas fa-camera"></i> Scan</button>
                   </div>
                 </div>
-                <div class="col-md-6"><label class="form-label fw-bold">Nama Produk (Jika Baru):</label><input type="text" class="form-control" placeholder="Nama Produk"></div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Nama Produk (Jika Baru):</label>
+                  <input type="text" class="form-control" placeholder="Nama Produk">
+                </div>
                 <div class="col-md-4">
                   <label class="form-label fw-bold">Kategori Barang Masuk:</label>
                   <select class="form-select" id="kategori-masuk" onchange="toggleRekeningBayar(this.value)">
@@ -421,15 +423,21 @@
                   </select>
                 </div>
                 <div class="col-md-4" id="pcs-wrapper" style="display:none;">
-                  <label class="form-label fw-bold text-primary">Jumlah Pcs per Kemasan:</label>
-                  <input type="number" id="qty-per-kemasan" class="form-control" placeholder="Contoh: 24" oninput="hitungHppOtomatis()">
+                  <label class="form-label fw-bold text-primary">Jumlah Pcs per Kemasan (Dus/Kodi):</label>
+                  <input type="number" id="qty-per-kemasan" class="form-control" placeholder="Contoh: 24 Pcs" oninput="hitungHppOtomatis()">
                 </div>
-                <div class="col-md-4"><label class="form-label fw-bold">Qty Masuk:</label><input type="number" id="qty-masuk" class="form-control" placeholder="0" oninput="hitungHppOtomatis()"></div>
-                <div class="col-md-4"><label class="form-label fw-bold">Total Nominal Kulakan (Rp):</label><input type="number" id="total-nominal-kulakan" class="form-control" placeholder="0" oninput="hitungHppOtomatis()"></div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Qty Masuk (Sesuai Satuan Terima):</label>
+                  <input type="number" id="qty-masuk" class="form-control" placeholder="0" oninput="hitungHppOtomatis()">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Total Nominal Kulakan (Rp):</label>
+                  <input type="number" id="total-nominal-kulakan" class="form-control" placeholder="0" oninput="hitungHppOtomatis()">
+                </div>
                 <div class="col-md-4 bg-light p-2 rounded border">
-                  <label class="form-label fw-bold text-success m-0">HPP Otomatis per Pcs:</label>
-                  <h4 class="text-success fw-bold m-0" id="hpp-otomatis-text">Rp 0</h4>
-                  <small class="text-muted">(Dicatat sebagai stok baru / batch baru)</small>
+                  <label class="form-label fw-bold text-success m-0">HPP Otomatis Konversi:</label>
+                  <h6 class="text-success fw-bold m-0" id="hpp-konversi-text">Ecer: Rp 0 | Dus: Rp 0 | Kodi: Rp 0</h6>
+                  <small class="text-muted">(Rincian HPP ini hanya tampil di Master Barang)</small>
                 </div>
                 <div class="col-md-12" id="rekening-bayar-wrapper" style="display:none;">
                   <label class="form-label fw-bold text-success">Pilih Pos Rekening Pembayaran Kulakan:</label>
@@ -444,7 +452,7 @@
                   </select>
                 </div>
               </div>
-              <button class="btn btn-success mt-4 w-100 py-2" onclick="executeWithProtection('Barang Masuk', () => alert('Barang Masuk Berhasil! Stok & Batch HPP Baru Dicatat.'))"><i class="fas fa-save me-1"></i> Simpan Barang Masuk</button>
+              <button class="btn btn-success mt-4 w-100 py-2" onclick="executeWithProtection('Barang Masuk', () => alert('Barang Masuk Berhasil! Rincian HPP Multi-Satuan Tercatat di Master Barang.'))"><i class="fas fa-save me-1"></i> Simpan Barang Masuk & Update HPP Master</button>
             </div>`;
           break;
 
@@ -453,8 +461,8 @@
             <div class="card p-3">
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
-                  <h5 class="m-0"><i class="fas fa-tags me-2"></i>Master Barang & Penetapan Batas Laba Minimal & Harga Jual</h5>
-                  <small class="text-muted">Atur harga jual multi-satuan (Ecer, Dus, Kodi) serta batas minimal laba per produk.</small>
+                  <h5 class="m-0"><i class="fas fa-tags me-2"></i>Master Barang & Rincian HPP Multi-Satuan (Ecer, Dus, Kodi)</h5>
+                  <small class="text-muted">Hulu HPP otomatis dari barang masuk, rincian tampil lengkap di sini.</small>
                 </div>
                 <button class="btn btn-primary" onclick="alert('Form Tambah Produk')"><i class="fas fa-plus me-1"></i> Tambah Produk</button>
               </div>
@@ -464,9 +472,8 @@
                     <tr>
                       <th>Barcode</th>
                       <th>Nama Produk & Batch</th>
-                      <th>HPP Otomatis</th>
-                      <th>Batas Minimal Laba (Rp)</th>
-                      <th>Harga Reguler (Ecer/Dus/Kodi)</th>
+                      <th>Rincian HPP (Ecer / Dus / Kodi)</th>
+                      <th>Harga Jual Reguler (Ecer/Dus/Kodi)</th>
                       <th>Harga Member (Ecer/Dus/Kodi)</th>
                       <th>Stok</th>
                       <th>Aksi</th>
@@ -476,8 +483,11 @@
                     <tr>
                       <td>8992761001</td>
                       <td>Minyak Goreng 2L <br><small class="text-secondary">Stok Lama</small></td>
-                      <td>Rp 30.000</td>
-                      <td><input type="number" class="form-control form-control-sm" value="3000" style="width: 110px;"></td>
+                      <td>
+                        <span class="text-success fw-bold">Ecer:</span> Rp 30.000<br>
+                        <span class="text-primary fw-bold">Dus (24 Pcs):</span> Rp 720.000<br>
+                        <span class="text-info fw-bold">Kodi (20 Pcs):</span> Rp 600.000
+                      </td>
                       <td>
                         <div class="input-group input-group-sm mb-1"><span class="input-group-text">Ecer</span><input type="text" class="form-control" value="34.000"></div>
                         <div class="input-group input-group-sm mb-1"><span class="input-group-text">Dus</span><input type="text" class="form-control" value="400.000"></div>
@@ -489,7 +499,7 @@
                         <div class="input-group input-group-sm"><span class="input-group-text">Kodi</span><input type="text" class="form-control" value="630.000"></div>
                       </td>
                       <td>50</td>
-                      <td><button class="btn btn-success btn-sm w-100" onclick="executeWithProtection('Simpan Harga', () => alert('Pengaturan Harga & Batas Laba Minimal Disimpan!'))"><i class="fas fa-save"></i> Simpan</button></td>
+                      <td><button class="btn btn-success btn-sm w-100" onclick="executeWithProtection('Simpan Harga', () => alert('Harga Master Disimpan!'))"><i class="fas fa-save"></i> Simpan</button></td>
                     </tr>
                   </tbody>
                 </table>
@@ -505,14 +515,12 @@
                   <h5 class="m-0"><i class="fas fa-handshake me-2"></i>Laporan Rekap HPP Barang Konsinyasi</h5>
                   <small class="text-muted">Total Nilai Aset Konsinyasi Ter-update: <strong>Rp 15.300.000</strong></small>
                 </div>
-                <button class="btn btn-success" onclick="exportToExcel('table-konsinyasi', 'Rekap_HPP_Konsinyasi_Supplier.xlsx')"><i class="fas fa-file-excel me-1"></i> Export .XLSX untuk Supplier</button>
+                <button class="btn btn-success" onclick="exportToExcel('table-konsinyasi', 'Rekap_HPP_Konsinyasi_Supplier.xlsx')"><i class="fas fa-file-excel me-1"></i> Export .XLSX</button>
               </div>
               <div class="table-responsive">
                 <table class="table table-striped align-middle" id="table-konsinyasi">
                   <thead><tr><th>Nama Supplier</th><th>Nama Barang</th><th>Qty Terjual</th><th>HPP per Unit</th><th>Total Wajib Bayar Supplier</th></tr></thead>
-                  <tbody>
-                    <tr><td>Supplier Snack Bu Siti</td><td>Keripik Tempe</td><td>25 Pcs</td><td>Rp 8.000</td><td>Rp 200.000</td></tr>
-                  </tbody>
+                  <tbody><tr><td>Supplier Snack Bu Siti</td><td>Keripik Tempe</td><td>25 Pcs</td><td>Rp 8.000</td><td>Rp 200.000</td></tr></tbody>
                 </table>
               </div>
             </div>`;
@@ -696,9 +704,7 @@
     function batalHapusSeluruhTransaksi() {
       if (confirm("Apakah Anda yakin ingin MEMBATALKAN seluruh transaksi ini? Keranjang belanja akan dikosongkan.")) {
         const tbody = document.getElementById('cart-tbody');
-        if (tbody) {
-          tbody.innerHTML = '';
-        }
+        if (tbody) tbody.innerHTML = '';
         hitungTotalBelanja();
         alert("Transaksi berhasil dibatalkan dan keranjang telah dikosongkan.");
       }
@@ -728,9 +734,7 @@
       });
 
       const grandTotalEl = document.getElementById('grand-total');
-      if(grandTotalEl) {
-        grandTotalEl.innerText = "Rp " + Math.round(grandTotal).toLocaleString('id-ID');
-      }
+      if(grandTotalEl) grandTotalEl.innerText = "Rp " + Math.round(grandTotal).toLocaleString('id-ID');
     }
 
     function validasiDiskonLaba(inputEl, minLaba) {
@@ -742,6 +746,38 @@
       } else {
         if(warningEl) warningEl.style.display = 'none';
         inputEl.classList.remove('is-invalid');
+      }
+    }
+
+    function toggleRekeningBayar(val) {
+      const wrapper = document.getElementById('rekening-bayar-wrapper');
+      if(wrapper) wrapper.style.display = (val === 'beli-langsung') ? 'block' : 'none';
+    }
+
+    function togglePcsPerKemasan(val) {
+      const wrapper = document.getElementById('pcs-wrapper');
+      if(wrapper) wrapper.style.display = (val === 'dus' || val === 'kodi') ? 'block' : 'none';
+      hitungHppOtomatis();
+    }
+
+    function hitungHppOtomatis() {
+      const satuan = document.getElementById('satuan-terima')?.value;
+      const qtyMasuk = parseFloat(document.getElementById('qty-masuk')?.value) || 0;
+      const totalNominal = parseFloat(document.getElementById('total-nominal-kulakan')?.value) || 0;
+      const pcsPerKemasan = parseFloat(document.getElementById('qty-per-kemasan')?.value) || 1;
+
+      let totalPcs = qtyMasuk;
+      if (satuan === 'dus' || satuan === 'kodi') {
+        totalPcs = qtyMasuk * pcsPerKemasan;
+      }
+
+      let hppPcs = (totalPcs > 0 && totalNominal > 0) ? (totalNominal / totalPcs) : 0;
+      let hppDus = hppPcs * (satuan === 'dus' ? pcsPerKemasan : 24); // Estimasi standar dus
+      let hppKodi = hppPcs * (satuan === 'kodi' ? pcsPerKemasan : 20); // Estimasi standar kodi
+
+      const textEl = document.getElementById('hpp-konversi-text');
+      if (textEl) {
+        textEl.innerText = `Ecer: Rp ${Math.round(hppPcs).toLocaleString('id-ID')} | Dus: Rp ${Math.round(hppDus).toLocaleString('id-ID')} | Kodi: Rp ${Math.round(hppKodi).toLocaleString('id-ID')}`;
       }
     }
 
